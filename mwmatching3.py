@@ -263,6 +263,7 @@ def maxWeightMatching(edges, maxcardinality=False):
                     augmentBlossom(bt, j)
                 mate[j] = labelend[bt]
                 p = labelend[bt] ^ 1
+
     for t in range(nvertex):
         label[:] = (2 * nvertex) * [ 0 ]
         bestedge[:] = (2 * nvertex) * [ -1 ]
