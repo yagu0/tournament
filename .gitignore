@@ -1,0 +1,6 @@
+*.pyc
+*.ods
+*.pdf
+*.csv
+*.html
+!tournament_sample.csv
