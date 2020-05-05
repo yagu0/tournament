@@ -3,4 +3,5 @@
 *.pdf
 *.csv
 *.html
+__pycache__/
 !tournament_sample.csv

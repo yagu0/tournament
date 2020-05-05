@@ -1,0 +1,18 @@
+Users as in vchess, register/login, can enter/quit tournaments (only enter before start), quit maybe not definitive
+A forfeit player isn't paired on next rounds until he clicks on a special button ("back in tournament"?)
+Admin: can create/modify/delete tournaments (menu "new tournament", visible only for them)
+(tournament infos including datetime, time control, nb rounds --> editable from tournament page)
+
+Main page: Tournaments list (sorted by finished, running, upcoming)
+
+Games finished: white or black player click on game, give game link (maybe) and result (always). Can be changed (re-click)
+(Room) Chat below, at every tournament stage
+
+Formulaire inscription (une fois loggé) :
+Si pas ELO, demander niveau estimé "débutant, intermédiaire, confirmé, expert, maître" (map 1200 1500 1800 2100 2400 ?)
+Case "ELO" libre : on suppose que les joueurs s'estimeront à peu près correctement.
+Aucune autre info nécessaire. Eventuellement proposer un rappel par email à H-1
+
+Vue, DB: object/table Tournament with ID, nbRounds, datetime start/end, cadence
+table Users (same as vchess, simplified)
+table Players link tID with uID + ELO for this event.
