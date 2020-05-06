@@ -219,15 +219,15 @@ updateTournament <- function(pairingColors, results, gameLinks=NULL) {
         newColumn[pairing[i,1]] <- ">"
       }
       else {
-        calcGameLink[pairing[i,1]] <- gameLinks[index]
+        if (gl) calcGameLink[pairing[i,1]] <- gameLinks[index]
         newColumn[pairing[i,1]] <- paste0(
-          results[index],
+          ifelse(colors[i] == 'B', results[index], bRes[[results[index]]]),
           pairing[i,2],
           colors[i]
         )
-        calcGameLink[pairing[i,2]] <- gameLinks[index]
+        if (gl) calcGameLink[pairing[i,2]] <- gameLinks[index]
         newColumn[pairing[i,2]] <- paste0(
-          bRes[[results[index]]],
+          ifelse(colors[i] == 'N', results[index], bRes[[results[index]]]),
           pairing[i,1],
           ifelse(colors[i] == 'B', 'N', 'B')
         )
@@ -268,13 +268,12 @@ computeFinalGrid <- function() {
   met <- list()
   exempt <- rep(0, n)
   minP <- 1 / (10 * nbRounds)
-  rounds <- as.data.frame(tournament[,-(1:4)])
   if (nbRounds >= 1) {
     # Fix input ="=4B" into =3B
     for (i in seq_len(n)) {
       for (j in seq_len(nbRounds)) {
-        if (startsWith(rounds[i,j], "=")) {
-          rounds[i,j] <- substr(rounds[i,j], 3, nchar(rounds[i,j])-1)
+        if (startsWith(tournament[i,j+4], "=")) {
+          tournament[i,j+4] <- substr(tournament[i,j+4], 3, nchar(tournament[i,j+4])-1)
         }
       }
     }
@@ -283,16 +282,16 @@ computeFinalGrid <- function() {
     score[i] <- 0
     metI <- c()
     for (j in seq_len(nbRounds)) {
-      cell <- rounds[i,j]
+      cell <- tournament[i,j+4]
       if (cell == ">") {
-        score <- score + 1
+        score[i] <- score[i] + 1
         exempt[i] <- exempt[i] + 1
       }
       else {
         nc <- nchar(cell)
         value1 <- substr(cell, 1, 1)
         value2 <- strtoi(substr(cell, 2, nc-1))
-        score <- score + symbolToScore(value1)
+        score[i] <- score[i] + symbolToScore(value1)
         if (!(value1 %in% c('F','f'))) {
           metI <- c(metI, value2)
         }
@@ -318,7 +317,8 @@ computeFinalGrid <- function() {
     L <- length(met[[i]])
     if (L >= 1) {
       for (m in met[[i]]) {
-        p <- score[m] / L
+        # Our opponent met at least us, so length(met[[m]]) >= 1
+        p <- (score[m] - exempt[m]) / length(met[[m]])
         bc[i] <- bc[i] + p
       }
       bc[i] <- bc[i] / L
@@ -329,7 +329,8 @@ computeFinalGrid <- function() {
   # 2) reorder data.frame (https://www.datanovia.com/en/lessons/reorder-data-frame-rows-in-r/)
   #    on score first, perf then, and tiebreak last.
   require(tidyverse)
-  tournament %>% arrange(-score, -perf, -bc)
+  tournament <- tournament %>% arrange(-score, -perf, -bc)
+  ranking <- tournament[,1]
   # 3) Translate into HTML ("tournament.html") with profile + games links
   games <- read.table("games.csv",
     sep=",", header=F, fill=T, comment.char="", blank.lines.skip=F)
@@ -357,9 +358,13 @@ computeFinalGrid <- function() {
     for (j in seq_len(nbRounds)) {
       line <- paste0(line,
         "<td>",
-        ifelse(nchar(games[i,j])>0, paste0("<a href='",games[i,j],"'>"), ""),
-        rounds[i,j],
-        ifelse(nchar(games[i,j])>0, "</a>", ""),
+        ifelse(!is.na(games[ranking[i],j]) && nchar(games[ranking[i],j])>0,
+          paste0("<a href='",games[ranking[i],j],"'>"),
+          ""),
+        tournament[i,j+4],
+        ifelse(!is.na(games[ranking[i],j]) && nchar(games[ranking[i],j])>0,
+          "</a>",
+          ""),
         "</td>"
       )
     }
@@ -379,12 +384,13 @@ computeFinalGrid <- function() {
       tournament[i,3],'")'
     )
     for (j in seq_len(nbRounds)) {
-      if (nchar(games[i,j]) > 0) {
+      # Test !is.na(games) because last row(s) could be empty
+      if (!is.na(games[ranking[i],j]) && nchar(games[ranking[i],j]) > 0) {
         tournament[i,j+4] <- paste0(
           '=HYPERLINK("',
-          games[i,j],
+          games[ranking[i],j],
           '";"',
-          rounds[i,j],
+          tournament[i,j+4],
           '")'
         )
       }

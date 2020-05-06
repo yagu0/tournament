@@ -11,10 +11,13 @@ export function maxWeightMatching(edges, maxcardinality=false) {
   const maxweight = Math.max.apply(null, edges.map(e => e[2]));
   const endpoint =
     [...Array(2*nedge).keys()].map(i => edges[Math.floor(i/2)][i%2]);
-  let neighbend = [...Array(nvertex).fill([])];
+  // NOTE: Next line doesn't work because an empty array would be shared
+  // among all neighbend[i]. Which wouldn't be very useful.
+  //let neighbend = [...Array(nvertex).fill([])];
+  let neighbend = [...Array(nvertex)].map(e => []);
   for (let k=0; k<nedge; k++) {
     const [i, j, w] = edges[k];
-    neighbend[i].push(2*k+1)
+    neighbend[i].push(2*k+1);
     neighbend[j].push(2*k);
   }
   let mate = [...Array(nvertex).fill(-1)];
@@ -262,7 +265,6 @@ export function maxWeightMatching(edges, maxcardinality=false) {
     }
   };
 
-  debugger;
   for (let t=0; t < nvertex; t++) {
     label = [...Array(2 * nvertex).fill(0)];
     bestedge = [...Array(2 * nvertex).fill(-1)];
