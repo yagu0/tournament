@@ -1,11 +1,26 @@
-## Basic tool to manage chess tournaments
+# 'tournament' web app
 
-Pairing algorithm is based on the weighted maximum matching code found here https://github.com/mlbright/Assignment-Problem/blob/master/mwmatching.py
+Web application to manage 2-players games tournaments, like Chess, Go,
+Draughts or anything like that.
 
-Current process is still a bit too long to be used in big tournaments. See first lines of pairing.R
+Pairing algorithm is based on the weighted maximum matching code
+[found here](https://github.com/mlbright/Assignment-Problem/blob/master/mwmatching.py).
 
-Next step: web interface where players would enter result + game link, with a "launch next round" button.
+Names in tournament\_sample.csv were generated with
+[fakenamegenerator.com](https://fr.fakenamegenerator.com/gen-random-fr-us.php).
 
-----
+## Get involved
 
-Note: names in tournament\_sample.csv were generated through https://fr.fakenamegenerator.com/gen-random-fr-us.php
+All contributions are welcome! For example,
+ - translations,
+ - design,
+ - Vue front-end,
+ - Express back-end.
+
+If you wanna help, you can contact me with the form on the website,
+so that we can discuss what to do and how :)
+If you feel comfortable with the code a pull request is a good start too.
+
+### Running the website locally
+
+Follow the instructions in server/README.md first, and then in client/README.md.

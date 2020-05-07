@@ -1,7 +1,36 @@
+# Various files
+/server/db/tournament.sqlite
+/server/config/parameters.js
+/server/fallback/*
+!/server/fallback/README
+/client/dist/*
+!/client/dist/.gitkeep
+/client/src/parameters.js
+/client/public/favicon.ico
+
+# Dependency directories#
+node_modules/
+
+# Log files
+npm-debug.log*
+
+# Temp files
+*.swp
+*~
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache/
+
+# dotenv environment variables file
+.env
+.env.local
+.env.*.local
+
+## TEMPORARY:
 *.pyc
-*.ods
-*.pdf
 *.csv
-*.html
 __pycache__/
 !tournament_sample.csv
