@@ -10,7 +10,6 @@ router.post("/players", access.logged, access.ajax, (req,res) => {
       res.json(err || ret);
     });
   }
-  else res.json({});
 });
 
 router.get("/players", access.ajax, (req,res) => {
@@ -24,17 +23,10 @@ router.get("/players", access.ajax, (req,res) => {
 
 router.put("/players", access.logged, access.ajax, (req,res) => {
   let obj = req.body.player;
-  if (PlayerModel.checkPlayer(obj))
+  if (PlayerModel.checkPlayer(obj)) {
     PlayerModel.safeUpdate(obj, req.userId, params.admin);
-  res.json({});
-});
-
-// TODO: also delete individually
-router.delete("/players", access.logged, access.ajax, (req,res) => {
-  const tid = req.query.id;
-  if (tid.toString().match(/^[0-9]+$/))
-    PlayerModel.safeRemove(tid, req.userId, params.admin);
-  res.json({});
+    res.json({});
+  }
 });
 
 module.exports = router;

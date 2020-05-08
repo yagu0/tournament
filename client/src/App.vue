@@ -37,9 +37,7 @@ import UpsertUser from "@/components/UpsertUser.vue";
 import { store } from "@/store.js";
 import { ajax } from "@/utils/ajax.js";
 export default {
-  components: {
-    UpsertUser
-  },
+  components: { UpsertUser },
   data: function() {
     return { st: store.state };
   },

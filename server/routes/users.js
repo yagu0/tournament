@@ -8,21 +8,17 @@ const params = require("../config/parameters");
 router.post('/register', access.unlogged, access.ajax, (req,res) => {
   const name = req.body.name;
   const email = req.body.email;
-  const notify = !!req.body.notify;
-  if (UserModel.checkNameEmail({name: name, email: email})) {
-    UserModel.create(name, email, notify, (err, ret) => {
+  let user = req.body.user;
+  if (UserModel.checkUser(user)) {
+    UserModel.create(user, (err, ret) => {
       if (!!err) {
         const msg = err.code == "SQLITE_CONSTRAINT"
-          ? "User name or email already in use"
+          ? "Duplicated email or license number"
           : "User creation failed. Try again";
-        res.json({errmsg: msg});
+        res.json({ errmsg: msg });
       }
       else {
-        const user = {
-          id: ret.id,
-          name: name,
-          email: email,
-        };
+        user.id = ret.id;
         setAndSendLoginToken("Welcome to " + params.siteURL, user, res);
         res.json({});
       }
@@ -33,23 +29,12 @@ router.post('/register', access.unlogged, access.ajax, (req,res) => {
 // NOTE: this method is safe because the sessionToken must be guessed
 router.get("/whoami", access.ajax, (req,res) => {
   const callback = (user) => {
-    res.json({
-      name: user.name,
-      email: user.email,
-      id: user.id,
-      notify: user.notify
-    });
+    res.json(user);
   };
-  const anonymous = {
-    name: "",
-    email: "",
-    id: 0,
-    notify: false
-  };
-  if (!req.cookies.token) callback(anonymous);
+  if (!req.cookies.token) callback({});
   else if (req.cookies.token.match(/^[a-z0-9]+$/)) {
     UserModel.getOne("sessionToken", req.cookies.token, (err, user) => {
-      callback(user || anonymous);
+      callback(user || {});
     });
   }
 });
@@ -60,7 +45,7 @@ router.get("/users", access.ajax, (req,res) => {
   // NOTE: slightly too permissive RegExp
   if (ids.match(/^([0-9]+,?)+$/)) {
     UserModel.getByIds(ids, (err, users) => {
-      res.json({ users:users });
+      res.json({ users: users });
     });
   }
 });
@@ -131,6 +116,7 @@ router.get('/authenticate', access.unlogged, access.ajax, (req,res) => {
             name: user.name,
             email: user.email,
             notify: user.notify,
+            active: user.active
           });
         });
       }

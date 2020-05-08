@@ -36,9 +36,7 @@ import { getRandString } from "@/utils/alea";
 import TournamentList from "@/components/TournamentList.vue";
 export default {
   name: "my-hall",
-  components: {
-    TournamentList,
-  },
+  components: { TournamentList },
   data: function() {
     return {
       st: store.state,

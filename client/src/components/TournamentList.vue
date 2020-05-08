@@ -28,7 +28,7 @@ export default {
   props: ["tournaments"],
   data: function() {
     return {
-      st: store.state,
+      st: store.state
     };
   },
   methods: {

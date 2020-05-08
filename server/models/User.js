@@ -6,8 +6,11 @@ const sendEmail = require('../utils/mailer');
 /*
  * Structure:
  *   _id: integer
- *   name: varchar
+ *   firstName: varchar
+ *   lastName: varchar
  *   email: varchar
+ *   license: varchar
+ *   club: varchar
  *   loginToken: token on server only
  *   loginTime: datetime (validity)
  *   sessionToken: token in cookies for authentication
@@ -16,26 +19,31 @@ const sendEmail = require('../utils/mailer');
  */
 
 const UserModel = {
-  checkNameEmail: function(o) {
+  checkUser: function(o) {
     return (
-      (!o.name || !!(o.name.match(/^[\w -]+$/))) &&
-      (!o.email || !!(o.email.match(/^[\w.+-]+@[\w.+-]+$/)))
+      (!!o.firstName && !!(o.firstName.match(/^[\w'-]+$/))) &&
+      (!!o.lastName && !!(o.firstName.match(/^[\w'-]+$/))) &&
+      (!!o.email && !!(o.email.match(/^[\w.+-]+@[\w.+-]+$/)))
+      (!o.club || !!(o.club.match(/^[\w' -]+$/))) &&
+      (!o.license || !!(o.license.match(/^[\w]+$/)))
     );
   },
 
-  create: function(name, email, notify, cb) {
+  create: function(u, cb) {
     db.serialize(function() {
       const query =
         "INSERT INTO Users " +
-        "(name, email, notify, created) VALUES " +
-        "('" + name + "','" + email + "'," + notify + "," + Date.now() + ")";
+        "(firstName, lastName, email, license, club, notify, created) " +
+        "VALUES " +
+        "('" + u.firstName + "','" + u.lastName + "','" + u.email + "','" +
+        u.license + "','" + u.club + "'," + u.notify + "," + Date.now() + ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });
     });
   },
 
-  // Find one user by id, name, email, or token
+  // Find one user by id, email, or token
   getOne: function(by, value, cb) {
     const delimiter = (typeof value === "string" ? "'" : "");
     db.serialize(function() {
@@ -50,7 +58,7 @@ const UserModel = {
   getByIds: function(ids, cb) {
     db.serialize(function() {
       const query =
-        "SELECT id, name " +
+        "SELECT id, firstName, lastName, club " +
         "FROM Users " +
         "WHERE id IN (" + ids + ")";
       db.all(query, cb);

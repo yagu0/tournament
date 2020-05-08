@@ -5,12 +5,12 @@ const db = require("../utils/database");
  *   tid: integer
  *   uid: integer
  *   elo: integer
- *   uname: varchar
+ *   name: varchar
  */
 
 const PlayerModel = {
   checkPlayer: function(p) {
-    return p.elo.toString().match(/^[0-9]+$/) && !!p.uname.match(/^[\w-]+$/);
+    return p.elo.toString().match(/^[0-9]+$/) && !!p.name.match(/^[\w-]+$/);
   },
 
   create: function(p, cb) {
@@ -38,17 +38,17 @@ const PlayerModel = {
     });
   },
 
-  // TODO: also individual removal by admin
-  safeRemove: function(tid, uid, admin) {
+  safeUpdate: function(p, uid, admin) {
     db.serialize(function() {
-      let whereClause = "WHERE id = " + id;
+      let whereClause = "WHERE tid = " + p.tid;
       if (!admin.includes(uid)) whereClause += " AND uid = " + uid;
       const query =
-        "DELETE FROM Players " +
+        "UPDATE Players " +
+        "SET elo = " + p.elo + ", name = '" + p.name + "' " +
         whereClause;
       db.run(query);
     });
-  },
+  }
 }
 
 module.exports = PlayerModel;

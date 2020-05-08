@@ -5,7 +5,8 @@ const db = require("../utils/database");
  *   id: integer
  *   dtstart: datetime
  *   title: varchar
- *   ttype: varchar (limited choices), or maybe integer
+ *   website: varchar (limited choices)
+ *   bothcol: boolean
  *   cadence: varchar
  *   completed: boolean
  *   nbRounds: integer >= 1
@@ -24,10 +25,10 @@ const TournamentModel = {
     db.serialize(function() {
       const query =
         "INSERT INTO Tournaments " +
-        "(dtstart, title, ttype, cadence, nbRounds) " +
+        "(dtstart, title, website, bothcol, cadence, nbRounds) " +
           "VALUES " +
-        "(" + t.dtstart + ",'" + t.title + "'," + t.ttype + ",'" +
-            t.cadence  + "'," + t.nbRounds + ")";
+        "(" + t.dtstart + ",'" + t.title + "','" + t.website + "'," +
+            t.bothcol + ",'" + t.cadence  + "'," + t.nbRounds + ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });

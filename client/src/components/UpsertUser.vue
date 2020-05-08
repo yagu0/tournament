@@ -26,31 +26,42 @@ div
         img(src="/images/icons/rightArrow.svg")
         | )
       div(@keyup.enter="onSubmit()")
+        fieldset
+          label(for="u_useremail") {{ st.tr["Email"] }}
+          input#u_useremail(
+            type="email"
+            v-model="user.email"
+          )
         div(v-show="stage!='Login'")
           fieldset
-            label(for="u_username") {{ st.tr["User name"] }}
-            input#u_username(
+            label(for="u_firstname") {{ st.tr["First name"] }}
+            input#u_firstname(
               type="text"
-              v-model="user.name"
+              v-model="user.firstName"
             )
           fieldset
-            label(for="u_useremail") {{ st.tr["Email"] }}
-            input#u_useremail(
-              type="email"
-              v-model="user.email"
+            label(for="u_lastname") {{ st.tr["Last name"] }}
+            input#u_lastname(
+              type="text"
+              v-model="user.lastName"
+            )
+          fieldset
+            label(for="u_club") {{ st.tr["Club"] }}
+            input#u_club(
+              type="text"
+              v-model="user.club"
+            )
+          fieldset
+            label(for="u_license") {{ st.tr["License"] }}
+            input#u_license(
+              type="text"
+              v-model="user.license"
             )
           fieldset
             label(for="notifyNew") {{ st.tr["Notifications by email"] }}
             input#notifyNew(
               type="checkbox"
               v-model="user.notify"
-            )
-        div(v-show="stage=='Login'")
-          fieldset
-            label(for="nameOrEmail") {{ st.tr["Name or Email"] }}
-            input#nameOrEmail(
-              type="text"
-              v-model="nameOrEmail"
             )
       button#submitBtn(@click="onSubmit()")
         | {{ st.tr[submitMessage] }}
@@ -66,7 +77,6 @@ export default {
   name: "my-upsert-user",
   data: function() {
     return {
-      nameOrEmail: "", //for login
       logStage: "Login", //or Register
       infoMsg: "",
       enterTime: Number.MAX_SAFE_INTEGER, //for a basic anti-bot strategy
@@ -77,17 +87,6 @@ export default {
   mounted: function() {
     document.getElementById("upsertDiv")
       .addEventListener("click", processModalClick);
-  },
-  watch: {
-    nameOrEmail: function(newValue) {
-      if (newValue.indexOf("@") >= 0) {
-        this.user.email = newValue;
-        this.user.name = "";
-      } else {
-        this.user.name = newValue;
-        this.user.email = "";
-      }
-    }
   },
   computed: {
     submitMessage: function() {
@@ -110,12 +109,8 @@ export default {
       if (event.target.checked) {
         this.infoMsg = "";
         this.enterTime = Date.now();
-        document.getElementById("u_username").focus();
-        this.user = {
-          name: this.st.user.name,
-          email: this.st.user.email,
-          notify: this.st.user.notify
-        };
+        document.getElementById("u_useremail").focus();
+        this.user = JSON.parse(JSON.stringify(this.st.user));
       }
     },
     toggleStage: function() {
@@ -159,12 +154,10 @@ export default {
       // Basic anti-bot strategy:
       const exitTime = Date.now();
       if (this.stage == "Register" && exitTime - this.enterTime < 5000) return;
-      let error = undefined;
-      if (this.stage == "Login") {
-        const type = this.nameOrEmail.indexOf("@") >= 0 ? "email" : "name";
-        error = checkNameEmail({ [type]: this.nameOrEmail });
-      }
-      else error = checkNameEmail(this.user);
+      let error =
+        this.stage == "Login"
+          ? checkEmail(this.user.email)
+          : checkUser(this.user);
       if (error) {
         alert(this.st.tr[error]);
         return;
@@ -177,17 +170,20 @@ export default {
           credentials: true,
           data: (
             this.stage == "Login"
-              ? { nameOrEmail: this.nameOrEmail }
+              ? { email: this.user.email }
               : this.user
           ),
           success: () => {
             this.infoMsg = this.infoMessage();
-            if (this.stage != "Update") this.nameOrEmail = "";
-            else {
-              this.st.user.name = this.user.name;
-              this.st.user.email = this.user.email;
-              this.st.user.notify = this.user.notify;
+            if (this.stage != "Update") {
+              this.user.email = "";
+              this.user.firstName = "";
+              this.user.lastName = "";
+              this.user.license = "";
+              this.user.club = "";
+              this.user.notify = false;
             }
+            else this.st.user = JSON.parse(JSON.stringify(this.user));
           },
           error: (err) => {
             this.infoMsg = "";

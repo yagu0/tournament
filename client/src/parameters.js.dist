@@ -9,8 +9,8 @@ const Parameters =
   // "include" if the server is at a different address
   credentials: "same-origin",
 
-  // IDs of users allowed to post news and edit any problem
-  devs: []
+  // IDs of users allowed to create, edit and delete any tournament/player
+  admin: []
 };
 
 export default Parameters;
