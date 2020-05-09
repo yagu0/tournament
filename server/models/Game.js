@@ -51,7 +51,7 @@ const GameModel = {
         "FROM Games " +
         "WHERE tid = " + tid;
       db.get(query, (err, games) => {
-        cb(err, games);
+        cb(err, games || []);
       });
     });
   },

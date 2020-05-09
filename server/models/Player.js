@@ -37,7 +37,7 @@ const PlayerModel = {
         "FROM Players " +
         "WHERE tid = " + tid;
       db.get(query, (err, players) => {
-        cb(err, players);
+        cb(err, players || []);
       });
     });
   },

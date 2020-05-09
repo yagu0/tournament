@@ -52,6 +52,16 @@ create table Games (
   glink varchar,
   player1 integer,
   player2 integer,
+  foreign key (player1) references Users(id),
+  foreign key (player2) references Users(id),
+  foreign key (tid) references Tournaments(id) on delete cascade
+);
+
+create table Exempts (
+  tid integer,
+  round integer,
+  player integer,
+  foreign key (player) references Users(id),
   foreign key (tid) references Tournaments(id) on delete cascade
 );
 

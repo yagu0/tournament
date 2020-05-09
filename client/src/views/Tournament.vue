@@ -47,7 +47,7 @@ main
       label.modal-close(for="modalGamelink")
       fieldset
         label(for="gamelink") {{ st.tr["Game link"] }}
-        input#gamelink(type="text" v-model="gameLink")
+        input#gamelink(type="text" v-model="curGame.gameLink")
         button(@click="setGamelink()") Send
   input#modalScore.modal(type="checkbox")
   div#scoreWrap(
@@ -74,7 +74,6 @@ main
       span {{ tournament.cadence }}
       span {{ tournament.nbRounds }}
       button#chatBtn(
-        :class="btnTooltipClass()"
         onClick="window.doClick('modalChat')"
         aria-label="Chat"
       )
@@ -90,7 +89,7 @@ main
       div(v-show="display=='players'")
         table
           thead
-            tr
+            tr(@click="tryTogglePlayer()")
               th Name
               th User name
               th Elo
@@ -102,34 +101,35 @@ main
               td {{ p.name }}
               td {{ p.elo }}
               td {{ p.club }}
-        button(@click="doClick('modalJoin')") Join
+        button(onClick="window.doClick('modalJoin')") Join
       div(v-show="display=='tournament'")
-        table(v-if="tournament.completed")
-          thead
-            tr
-              th Pl
-              th Name
-              th User name
-              th Elo
-              th Club
-              th(v-for="(r,i) in rounds") {{ "R" + i }}
-              th Score
-              th Bc
-              th Perf
-          tbody
-            tr(v-for="(p,i) in players")
-              td {{ i }}
-              td {{ p.firstName + " " + p.lastName }}
-              td {{ p.name }}
-              td {{ p.elo }}
-              td {{ p.club }}
-              // TODO: with game links
-              td(v-for="(r,j) in rounds") {{ finalGrid.rounds[i][j] }}
-              td {{ finalGrid.score[i] }}
-              td {{ finalGrid.tieBreak[i] }}
-              td {{ finalGrid.performance[i] }}
+        div(v-if="tournament.completed")
+          table(v-if="!!finalGrid")
+            thead
+              tr
+                th Pl
+                th Name
+                th User name
+                th Elo
+                th Club
+                th(v-for="(r,i) in rounds") {{ "R" + i }}
+                th Score
+                th Bc
+                th Perf
+            tbody
+              tr(v-for="(p,i) in players")
+                td {{ i }}
+                td {{ p.firstName + " " + p.lastName }}
+                td {{ p.name }}
+                td {{ p.elo }}
+                td {{ p.club }}
+                // TODO: with game links
+                td(v-for="(r,j) in rounds") {{ finalGrid.rounds[i][j] }}
+                td {{ finalGrid.score[i] }}
+                td {{ finalGrid.tieBreak[i] }}
+                td {{ finalGrid.performance[i] }}
         div(v-else-if="Date.now() > tournament.dtstart")
-          table
+          table(v-if="rounds.length >= 1")
             thead
               tr
                 th Player1
@@ -137,20 +137,25 @@ main
                 th Result
                 th View
             tbody
-              tr(v-for="g in getPairing()")
+              tr(v-for="g in rounds[rounds.length-1]")
+                // TODO: show names, not IDs, and show [current score]
                 td {{ g.player1 }}
                 td {{ g.player2 }}
                 td(@click="tryShowModalScore(g)") {{ g.score }}
                 td(@click="setLinkOrShowGame(g)") {{ viewGameBtn(g) }}
-              // + marquer joueurs forfaits absents pour ronde suivante
-              // + pour getPairing --> computePairing --> exempt (variables !)
-              // this.pairing .......
-              // --> quit = vecteur à ajouter à Tournament,
-              // bouton detecte si player has Quit, allow join again
-              // ==> action sur tournament directement (PUT...)
-              // + bouton "join again"
-              tr(v-if="exempt") TODO
+              // pairing = round + exempt
+              tr(v-if="!!exempts[rounds.length-1]")
+                td {{ exempts[rounds.length-1] }}
+                td -
+                td 1
+                td &nbsp;
+          button(
+            v-show="showPairingBtn()"
+            @click="computePairings()"
+          )
+            | Next round
         div(v-else)
+          // TODO: setInterval, same as for time on vchess
           span {{ countdown }}
 </template>
 
@@ -161,6 +166,8 @@ import { notify } from "@/utils/notifications";
 import { ajax } from "@/utils/ajax";
 import { getRandString } from "@/utils/alea";
 import { ArrayFun } from "@/utils/array";
+import { store } from "@/store";
+import { processModalClick } from "@/utils/modalClick.js";
 import params from "@/parameters";
 export default {
   name: "my-tournament",
@@ -171,12 +178,14 @@ export default {
       tournament: { completed: false },
       players: [],
       chats: [],
+      display: "players",
       rounds: [],
+      exempts: [],
       finalGrid: null,
       newName: "",
       newElo: 0,
       countdown: 0,
-      curGame: null, //for tryShowModalScore(g) "callback"
+      curGame: {}, //for tryShowModalScore(g) "callback"
       conn: null
     };
   },
@@ -222,8 +231,14 @@ export default {
       this.chats = [];
       const setSocketVars = () => {
         const now = Date.now();
-        if (!this.tournament.completed && now < this.tournament.dtstart)
-          this.countdown = this.tournament.dtstart - now;
+        if (now < this.tournament.dtstart) {
+          // Tournament running or completed
+          this.display = "tournament";
+          if (res.tournament.completed)
+            this.computeFinalGrid(res.tournament);
+          else
+            this.countdown = this.tournament.dtstart - now;
+        }
         // Initialize connection
         const sid = getRandString();
         this.connexionString = params.socketUrl + "/?sid=" + sid;
@@ -233,9 +248,12 @@ export default {
           () => {
             if (this.conn.readyState == 3) {
               this.conn.removeEventListener(
-                "message", this.socketMessageListener);
+                "message",
+                this.socketMessageListener);
               this.conn = new WebSocket(this.connexionString);
-              this.conn.addEventListener("message", this.socketMessageListener);
+              this.conn.addEventListener(
+                "message",
+                this.socketMessageListener);
             }
           },
           1000
@@ -247,10 +265,59 @@ export default {
         {
           data: { id: this.$route.params["id"] },
           success: (res) => {
-            if (res.tournament.completed)
-              this.computeFinalGrid(res.tournament);
             this.tournament = res.tournament;
             setSocketVars();
+            if (res.tournament.dtstart > Date.now()) return;
+            // Tournament has started (may be finished):
+            ajax(
+              "/chats",
+              "GET",
+              {
+                data: { tid: this.$route.params["id"] },
+                success: (res) => {
+                  this.chats = res.chats;
+                }
+              }
+            );
+            ajax(
+              "/games",
+              "GET",
+              {
+                data: { tid: this.$route.params["id"] },
+                success: (res) => {
+                  if (res.games.length == 0) return;
+                  // Reorganize games data into rounds array.
+                  // Final round may have incomplete result.
+                  res.games.forEach(g => {
+                    if (this.rounds.length <= g.round) {
+                      Array.prototoype.push.apply(
+                        this.rounds,
+                        [...Array(g.round - this.rounds.length + 1)]
+                      )
+                    }
+                    this.rounds[g.round].push({
+                      player1: g.player1,
+                      player2: g.player2,
+                      score: g.score,
+                      gameLink: g.gameLink,
+                    });
+                  });
+                  this.exempts = [...Array(this.rounds.length).fill(null)];
+                  ajax(
+                    "/exempts",
+                    "GET",
+                    {
+                      data: { tid: this.$route.params["id"] },
+                      success: (res) => {
+                        res.exempts.forEach(e => {
+                          this.exempts[e.round] = e.player; //not null
+                        });
+                      }
+                    }
+                  );
+                }
+              }
+            );
           }
         }
       );
@@ -288,39 +355,6 @@ export default {
           }
         }
       );
-      ajax(
-        "/chats",
-        "GET",
-        {
-          data: { tid: this.$route.params["id"] },
-          success: (res) => {
-            this.chats = res.chats;
-          }
-        }
-      );
-      ajax(
-        "/games",
-        "GET",
-        {
-          data: { tid: this.$route.params["id"] },
-          success: (res) => {
-            // Reorganize games data into rounds array.
-            // Final round may have incomplete result.
-            res.games.forEach(g => {
-              if (this.rounds.length <= g.round) {
-                Array.prototoype.push.apply(
-                  this.rounds, [...Array(g.round - this.rounds.length + 1)])
-              }
-              this.rounds[g.round].push({
-                player1: g.player1,
-                player2: g.player2,
-                score: g.score,
-                gameLink: g.gameLink,
-              });
-            });
-          }
-        }
-      );
     },
     joinTournament: function() {
       const newPlayer = {
@@ -349,6 +383,27 @@ export default {
         }
       );
     },
+    tryTogglePlayer: function() {
+      // TODO: player + admin usage, put a player in or out tournament
+      // TODO: if admin action, also option "ban" with no possible return.
+      // (maybe just a confirm() box "definitive exit?"
+      // ==> A "quit" vector is required, maybe directly in Tournament...
+    },
+    showPairingBtn: function() {
+      const L = this.rounds.length;
+      return (
+        params.admin.includes(this.st.user.id) &&
+        (
+          L == 0 ||
+          this.rounds[L-1].every(g => !!g.score)
+        )
+      );
+    },
+    computePairings: function() {
+      // TODO: rounds[L-1] is supposed completed,
+      // add a column and fill it with new pairing.
+      // TODO: need to keep track or recompute current scores.
+    },
     computeFinalGrid: function(t) {
       // 'rounds' array is supposed full
       const n = this.players.length;
@@ -371,16 +426,8 @@ export default {
       if (!action && document.getElementById("modalChat").checked)
         // Entering chat
         document.getElementById("inputChat").focus();
-      else {
+      else
         document.getElementById("chatBtn").classList.remove("somethingnew");
-        if (!!this.game.mycolor) {
-          // Update "chatRead" variable either on server or locally
-          if (this.game.type == "corr")
-            this.updateCorrGame({ chatRead: this.game.mycolor });
-          else if (this.game.type == "live")
-            GameStorage.update(this.gameRef, { chatRead: true });
-        }
-      }
     },
     tryShowModalScore: function(g) {
       if ([g.player1, g.player2].includes(this.st.user.id)) {
@@ -388,7 +435,7 @@ export default {
         doClick("modalScore");
       }
     },
-    setScore(e) {
+    setScore: function(e) {
       const score = e.target.innerHTML;
       this.curGame.score = score;
       ajax(
@@ -396,14 +443,24 @@ export default {
         "PUT",
         { data: { game: this.curGame } }
       );
-      this.curGame = null; //in case of
+      this.curGame = {};
+    },
+    setGameLink: function() {
+      ajax(
+        "/games",
+        "PUT",
+        { data: { game: this.curGame } }
+      );
+      this.curGame = {};
     },
     setElo(value) {
       this.newElo = value;
     },
     setLinkOrShowGame: function(g) {
-      if ([g.player1, g.player2].includes(this.st.user.id))
+      if ([g.player1, g.player2].includes(this.st.user.id)) {
+        this.curGame = g;
         doClick("modalGamelink");
+      }
       else this.$router.push(g.gameLink);
     },
     viewGameBtn: function(g) {

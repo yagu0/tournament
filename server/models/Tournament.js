@@ -63,7 +63,7 @@ const TournamentModel = {
         "ORDER BY dtstart DESC " +
         "LIMIT 20"; //TODO: 20 is arbitrary
       db.all(query, (err, tournaments) => {
-        cb(err, tournaments);
+        cb(err, tournaments || []);
       });
     });
   },

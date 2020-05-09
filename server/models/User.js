@@ -141,7 +141,7 @@ const UserModel = {
 
   notify: function(user, message) {
     const subject = "tournament - notification";
-    const body = "Hello " + user.name + " !" + `
+    const body = "Hello " + user.firstName + " " + user.lastName + " !" + `
 ` + message;
     sendEmail(params.mail.noreply, user.email, subject, body);
   },
@@ -161,7 +161,7 @@ const UserModel = {
     const day = 86400000;
     db.serialize(function() {
       const query =
-        "SELECT id, sessionToken, created, name, email " +
+        "SELECT id, sessionToken, created, email, firstName, lastName " +
         "FROM Users";
       db.all(query, (err, users) => {
         let toRemove = [];

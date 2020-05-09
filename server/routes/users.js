@@ -54,7 +54,7 @@ router.get("/users", access.ajax, (req,res) => {
   else {
     // Retrieve all users:
     UserModel.getAll((err, users) => {
-      res.json({ users: users });
+      res.json({ users: users || [] });
     });
   }
 });
@@ -87,7 +87,7 @@ function setAndSendLoginToken(subject, to, res) {
 
 router.get('/sendtoken', access.unlogged, access.ajax, (req,res) => {
   const email = decodeURIComponent(req.query.email);
-  if (UserModel.checkEmail({email: email})) {
+  if (UserModel.checkEmail({ email: email })) {
     UserModel.getOne("email", email, (err,user) => {
       access.checkRequest(res, err, user, "Unknown user", () => {
         setAndSendLoginToken("Token for " + params.siteURL, user, res);

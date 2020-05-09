@@ -13,13 +13,15 @@ module.exports =
     if (!req.cookies.token) {
       loggedIn = false;
       callback();
-    } else {
+    }
+    else {
       UserModel.getOne("sessionToken", req.cookies.token, (err, user) => {
         if (!!user) {
           req.userId = user.id;
           req.userName = user.name;
           loggedIn = true;
-        } else {
+        }
+        else {
           // Token in cookies presumably wrong: erase it
           res.clearCookie("token");
           loggedIn = false;
@@ -52,6 +54,7 @@ module.exports =
       (typeof out === "object" && Object.keys(out).length == 0)
     ) {
       res.json({ errmsg: msg });
-    } else cb();
+    }
+    else cb();
   }
 }
