@@ -2,13 +2,14 @@
 main
   .row
     .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
+      h4 {{ st.tr["Tournaments"] }}
       .button-group
         button.tabbtn#pastTournaments(@click="setDisplay('past',$event)")
-          | {{ st.tr["Pas tournaments"] }}
+          | {{ st.tr["Finished"] }}
         button.tabbtn#currTournaments(@click="setDisplay('curr',$event)")
-          | {{ st.tr["Running tournaments"] }}
+          | {{ st.tr["In progress"] }}
         button.tabbtn#nextTournaments(@click="setDisplay('next',$event)")
-          | {{ st.tr["Upcoming tournaments"] }}
+          | {{ st.tr["Upcoming"] }}
       TournamentList(
         v-show="display=='past'"
         :tournaments="pastTournaments"
@@ -59,14 +60,15 @@ export default {
     window.addEventListener("beforeunload", this.cleanBeforeDestroy);
   },
   mounted: function() {
-    this.display = localStorage.getItem("disp-hall") || "curr";
+    this.setDisplay(localStorage.getItem("disp-hall") || "curr");
     ajax(
       "/tournaments",
       "GET",
       {
+        data: { cursor: this.cursor },
         success: (res) => {
           const now = Date.now();
-          this.pasTournaments = [];
+          this.pastTournaments = [];
           res.tournaments.forEach(t => {
             if (t.dtstart < now) {
               if (t.completed) {
@@ -91,7 +93,8 @@ export default {
     setDisplay: function(type, e) {
       this.display = type;
       localStorage.setItem("disp-hall", type);
-      let elt = (!!e ? e.target : document.getElementById(type + "Games"));
+      let elt =
+        (!!e ? e.target : document.getElementById(type + "Tournaments"));
       elt.classList.add("active");
       for (let t of ["past","curr","next"]) {
         if (t != type)
@@ -121,6 +124,10 @@ export default {
 </script>
 
 <style lang="sass" scoped>
+h4
+  font-weight: bold
+  text-align: center
+
 .active
   color: #388e3c
 

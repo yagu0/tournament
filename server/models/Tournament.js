@@ -12,12 +12,19 @@ const db = require("../utils/database");
  *   nbRounds: integer >= 1
  */
 
+const allowedWebsite = [
+  "lichess",
+  "vchess"
+];
+
 const TournamentModel = {
   checkTournament: function(t) {
-    // TODO: check other fields? (especially 'title')
     return (
-      t.id.toString().match(/^[0-9]+$/) &&
-      t.nbRounds.toString().match(/^[0-9]+$/)
+      !!t.id && !!t.id.toString().match(/^[0-9]+$/) &&
+      !!t.dtstart && !!t.dtstart.toString().match(/^[0-9]+$/) &&
+      !!t.nbRounds && !!t.nbRounds.toString().match(/^[0-9]+$/) &&
+      !!t.cadence && !!t.cadence.match(/^[\w -]+$/) &&
+      allowedWebsite.includes(t.website)
     );
   },
 
@@ -27,9 +34,9 @@ const TournamentModel = {
         "INSERT INTO Tournaments " +
         "(dtstart, title, website, bothcol, cadence, nbRounds) " +
           "VALUES " +
-        "(" + t.dtstart + ",'" + t.title + "','" + t.website + "'," +
-            t.bothcol + ",'" + t.cadence  + "'," + t.nbRounds + ")";
-      db.run(query, function(err) {
+        "(" + t.dtstart + ", ?, '" + t.website + "'," +
+            !!t.bothcol + ",'" + t.cadence  + "'," + t.nbRounds + ")";
+      db.run(query, t.title, function(err) {
         cb(err, { id: this.lastID });
       });
     });
@@ -44,6 +51,35 @@ const TournamentModel = {
       db.get(query, (err, problem) => {
         cb(err, problem);
       });
+    });
+  },
+
+  getNext: function(cursor, cb) {
+    db.serialize(function() {
+      const query =
+        "SELECT * " +
+        "FROM Tournaments " +
+        "WHERE dtstart < " + cursor + " " +
+        "ORDER BY dtstart DESC " +
+        "LIMIT 20"; //TODO: 20 is arbitrary
+      db.all(query, (err, tournaments) => {
+        cb(err, tournaments);
+      });
+    });
+  },
+
+  modify: function(t) {
+    db.serialize(function() {
+      const query =
+        "UPDATE Tournament " +
+        "SET dtstart = " + t.dtstart +
+        ", title = '" + t.title + "'" +
+        ", website = '" + t.website + "'" +
+        ", bothcol = " + t.bothcol +
+        ", cadence = '" + t.cadence + "'" +
+        ", nbRounds = " + t.nbRounds + " " +
+        "WHERE id = " + t.id;
+      db.run(query);
     });
   },
 

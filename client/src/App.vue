@@ -1,6 +1,7 @@
 <template lang="pug">
 #app
   UpsertUser
+  Language
   .container
     .row
       .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
@@ -13,20 +14,19 @@
           #menuBar(@click="hideDrawer($event)")
             label.drawer-close(for="drawerControl")
             #leftMenu
-              router-link(to="/tournaments")
+              router-link(to="/")
                 | {{ st.tr["Tournaments"] }}
               router-link(to="/users")
                 | {{ st.tr["Users"] }}
             #rightMenu
               .clickable(onClick="window.doClick('modalUser')") {{ userName }}
+              .clickable(onClick="doClick('modalLang')")
+                | {{ st.tr["Language"] }}
     router-view
   .row
     .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
       footer
         router-link.menuitem(to="/faq") F.A.Q.
-        a.menuitem(href="TODO?")
-          span Discord
-          img.first(src="./assets/discord.svg")
         a.menuitem(href="https://github.com/yagu0/tournament")
           span {{ st.tr["Code"] }}
           img(src="./assets/github.svg")
@@ -34,18 +34,24 @@
 
 <script>
 import UpsertUser from "@/components/UpsertUser.vue";
+import Language from "@/components/Language.vue";
 import { store } from "@/store.js";
 import { ajax } from "@/utils/ajax.js";
 export default {
-  components: { UpsertUser },
+  components: {
+    UpsertUser,
+    Language
+  },
   data: function() {
-    return { st: store.state };
+    return {
+      st: store.state
+    };
   },
   computed: {
     userName: function() {
       return (
         this.st.user.id > 0
-          ? (this.st.user.name || "@nonymous")
+          ? this.st.user.firstName + " " + this.st.user.lastName
           : "Login"
       );
     }
@@ -215,9 +221,8 @@ nav
 
 footer
   display: inline-flex
-  justify-content: flex-start
+  justify-content: center
   align-items: center
-  width: 50%
   height: 45px
   border: 1px solid #ddd
   box-sizing: border-box
@@ -225,20 +230,22 @@ footer
   font-size: 1rem
   width: 100%
   padding: 0
-footer .menuitem
-  margin: 0 12px
-  display: inline-flex
-  align-self: center
-  &:link
-    color: #2c3e50
-    text-decoration: none
-  &:visited, &:hover
-    color: #2c3e50
-    text-decoration: none
-  & > img
-    display: inline-block
-    height: 1.3em
-    margin: 0 5px
+  & > .menuitem
+    margin: 0 12px
+    display: inline-flex
+    align-self: center
+    &:link
+      color: #2c3e50
+      text-decoration: none
+    &:visited, &:hover
+      color: #2c3e50
+      text-decoration: none
+    & > img
+      display: inline-block
+      height: 1.3em
+      margin: 0 5px
+    &.router-link-exact-active
+      color: #388e3c
 
 @media screen and (max-width: 767px)
   footer

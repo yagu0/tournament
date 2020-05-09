@@ -38,9 +38,14 @@ export default {
     },
     sortedTournaments: function() {
       // Show in start time order:
-      return this.tournaments.sort((t1, t2) => t2.dtstart - t1.dtstart);
+      return (
+        this.tournaments
+        // "map" to avoid altering property (=> infinite loop)
+        .map(t => t)
+        .sort((t1, t2) => t2.dtstart - t1.dtstart)
+      );
     }
-    // TODO: delete + edit options if recognized admin or tournament supervisor
+    // TODO: create, delete + edit options if admin
   }
 };
 </script>

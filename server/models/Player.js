@@ -10,16 +10,20 @@ const db = require("../utils/database");
 
 const PlayerModel = {
   checkPlayer: function(p) {
-    return p.elo.toString().match(/^[0-9]+$/) && !!p.name.match(/^[\w-]+$/);
+    return (
+      !!p.tid && p.tid.toString().match(/^[0-9]+$/) &&
+      !!p.elo && p.elo.toString().match(/^[0-9]+$/) &&
+      !!p.name && !!p.name.match(/^[\w-]+$/)
+    );
   },
 
   create: function(p, cb) {
     db.serialize(function() {
       const query =
         "INSERT INTO Players " +
-        "(uid, tid, uname, elo) " +
+        "(uid, tid, name, elo) " +
           "VALUES " +
-        "(" + p.uid + "," + p.tid + ",'" + p.uname + "'," + p.elo + ")";
+        "(" + p.uid + "," + p.tid + ",'" + p.name + "'," + p.elo + ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });

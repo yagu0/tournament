@@ -40,6 +40,7 @@ module.exports = function(wss) {
     const closeListener = () => {
       delete clients[sid];
     };
+    // TODO: if clients[sid] already exists, show "tab now offline" message
     clients[sid] = socket;
     socket.on("message", messageListener);
     socket.on("close", closeListener);

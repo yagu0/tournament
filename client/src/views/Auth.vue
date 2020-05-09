@@ -26,19 +26,13 @@ export default {
         data: { token: this.$route.params["token"] },
         success: (res) => {
           this.authOk = true;
-          this.st.user.id = res.id;
-          this.st.user.firstName = res.firstName;
-          this.st.user.lastName = res.lastName;
-          this.st.user.email = res.email;
-          this.st.user.notify = res.notify;
-          this.st.user.active = res.active;
+          this.st.user = res;
           if (!res.active) {
             alert(
               this.st.tr["Account not activated yet: please wait a few hours"]
             );
           }
-          localStorage["myname"] = res.name;
-          localStorage["myid"] = res.id;
+          localStorage["user"] = JSON.stringify(res);
         }
       }
     );

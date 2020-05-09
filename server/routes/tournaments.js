@@ -4,12 +4,8 @@ const params = require("../config/parameters");
 const TournamentModel = require("../models/Tournament");
 
 router.post("/tournaments", access.logged, access.ajax, (req,res) => {
-  if (TournamentModel.checkTournament(req.body.tour)) {
-    const tournament = {
-      dtstart: req.body.tour.dtstart,
-      ttype: req.body.tour.ttype,
-      cadence: req.body.tour.cadence
-    };
+  const tournament = req.body.tournament;
+  if (TournamentModel.checkTournament(tournament)) {
     TournamentModel.create(tournament, (err, ret) => {
       res.json(err || ret);
     });
@@ -34,14 +30,18 @@ router.get("/tournaments", access.ajax, (req,res) => {
 
 router.put("/tournaments", access.logged, access.ajax, (req,res) => {
   let obj = req.body.tournament;
-  if (TournamentModel.checkTournament(obj))
-    TournamentModel.safeUpdate(obj, req.userId, params.admin);
+  if (
+    params.admin.includes(req.userId) &&
+    TournamentModel.checkTournament(obj)
+  ) {
+    TournamentModel.modify(obj);
+  }
   res.json({});
 });
 
 router.delete("/tournaments", access.logged, access.ajax, (req,res) => {
   const tid = req.query.id;
-  if (tid.toString().match(/^[0-9]+$/))
+  if (!!tid && !!tid.toString().match(/^[0-9]+$/))
     TournamentModel.safeRemove(tid, req.userId, params.admin);
   res.json({});
 });

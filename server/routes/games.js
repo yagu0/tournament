@@ -21,7 +21,6 @@ router.get("/games", access.ajax, (req,res) => {
   }
 });
 
-// TODO: tournament supervisor can update results and links too
 router.put("/games", access.logged, access.ajax, (req,res) => {
   const game = req.body.game;
   if (GameModel.checkGame(game)) {

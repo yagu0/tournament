@@ -142,6 +142,14 @@ main
                 td {{ g.player2 }}
                 td(@click="tryShowModalScore(g)") {{ g.score }}
                 td(@click="setLinkOrShowGame(g)") {{ viewGameBtn(g) }}
+              // + marquer joueurs forfaits absents pour ronde suivante
+              // + pour getPairing --> computePairing --> exempt (variables !)
+              // this.pairing .......
+              // --> quit = vecteur à ajouter à Tournament,
+              // bouton detecte si player has Quit, allow join again
+              // ==> action sur tournament directement (PUT...)
+              // + bouton "join again"
+              tr(v-if="exempt") TODO
         div(v-else)
           span {{ countdown }}
 </template>
@@ -160,11 +168,13 @@ export default {
   data: function() {
     return {
       st: store.state,
-      tournament: null,
+      tournament: { completed: false },
       players: [],
       chats: [],
       rounds: [],
       finalGrid: null,
+      newName: "",
+      newElo: 0,
       countdown: 0,
       curGame: null, //for tryShowModalScore(g) "callback"
       conn: null
@@ -215,7 +225,8 @@ export default {
         if (!this.tournament.completed && now < this.tournament.dtstart)
           this.countdown = this.tournament.dtstart - now;
         // Initialize connection
-        this.connexionString = params.socketUrl + "/?sid=" + this.st.user.sid;
+        const sid = getRandString();
+        this.connexionString = params.socketUrl + "/?sid=" + sid;
         this.conn = new WebSocket(this.connexionString);
         this.conn.addEventListener("message", this.socketMessageListener);
         this.socketCloseListener = setInterval(
@@ -236,6 +247,8 @@ export default {
         {
           data: { id: this.$route.params["id"] },
           success: (res) => {
+            if (res.tournament.completed)
+              this.computeFinalGrid(res.tournament);
             this.tournament = res.tournament;
             setSocketVars();
           }
@@ -255,9 +268,20 @@ export default {
                 success: (res2) => {
                   // User IDs may not appear in the same order
                   let userIds = {};
-                  res2.users.forEach(u => { userIds[u.id] = u.name; });
+                  res2.users.forEach(u => {
+                    userIds[u.id] = {
+                      firstName: u.firstName,
+                      lastName: u.lastName,
+                      club: u.club
+                    };
+                  });
                   this.players = res.players;
-                  this.players.forEach(p => { p.name = userIds[p.uid]; });
+                  this.players.forEach(p => {
+                    p.firstName = userIds[p.uid].firstName;
+                    p.lastName = userIds[p.uid].lastName;
+                    p.club = userIds[p.uid].club;
+                    if (p.uid == this.st.user.id) this.st.user.name = p.name;
+                  });
                 }
               }
             );
@@ -299,11 +323,33 @@ export default {
       );
     },
     joinTournament: function() {
-        // We already have license + club information.
-        // Missing: elo, username
-        // Bouton "Join" --> donner elo (intermediate master ...)
+      const newPlayer = {
+        elo: this.newELo,
+        name: this.newName,
+      };
+      ajax(
+        "/players",
+        "POST",
+        {
+          data: {
+            player: Object.assign({ tid: this.tournament.id }, newPlayer)
+          },
+          success: (res) => {
+            this.players.push(
+              Object.assign(
+                {
+                  firstName: this.st.user.firstName,
+                  lastName: this.st.user.lastName,
+                  club: this.st.user.club
+                },
+                newPlayer
+              )
+            );
+          }
+        }
+      );
     },
-    computeFinalGrid: function() {
+    computeFinalGrid: function(t) {
       // 'rounds' array is supposed full
       const n = this.players.length;
       let scores = [...Array(n).fill(0)];

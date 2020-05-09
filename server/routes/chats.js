@@ -8,7 +8,7 @@ router.post("/chats", access.logged, access.ajax, (req,res) => {
     tid: req.body.tid,
     msg: req.body.msg
   };
-  if (!!chat.tid && !!chat.tid.match(/^[0-9]+$/)) {
+  if (ChatModel.checkChat(chat)) {
     ChatModel.create(chat, (err, ret) => {
       res.json(err || ret);
     });

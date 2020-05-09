@@ -15,18 +15,23 @@ const sendEmail = require('../utils/mailer');
  *   loginTime: datetime (validity)
  *   sessionToken: token in cookies for authentication
  *   notify: boolean (send email notifications 1H before tournament)
+ *   active: boolean (validated by admin)
  *   created: datetime
  */
 
 const UserModel = {
   checkUser: function(o) {
     return (
-      (!!o.firstName && !!(o.firstName.match(/^[\w'-]+$/))) &&
-      (!!o.lastName && !!(o.firstName.match(/^[\w'-]+$/))) &&
-      (!!o.email && !!(o.email.match(/^[\w.+-]+@[\w.+-]+$/)))
-      (!o.club || !!(o.club.match(/^[\w' -]+$/))) &&
-      (!o.license || !!(o.license.match(/^[\w]+$/)))
+      (!!o.firstName && !!o.firstName.match(/^[a-zA-Z-]+$/)) &&
+      (!!o.lastName && !!o.firstName.match(/^[a-zA-Z'-]+$/)) &&
+      UserModel.checkEmail(o.email) &&
+      (!o.club || !!o.club.match(/^[\w' -]+$/)) &&
+      (!o.license || !!o.license.match(/^[\w-]+$/))
     );
+  },
+
+  checkEmail: function(email) {
+    return (!!email && !!email.match(/^[\w.+-]+@[\w.+-]+$/));
   },
 
   create: function(u, cb) {
@@ -35,16 +40,19 @@ const UserModel = {
         "INSERT INTO Users " +
         "(firstName, lastName, email, license, club, notify, created) " +
         "VALUES " +
-        "('" + u.firstName + "','" + u.lastName + "','" + u.email + "','" +
-        u.license + "','" + u.club + "'," + u.notify + "," + Date.now() + ")";
+        "('" +
+          u.firstName + "','" + u.lastName + "','" + u.email + "','" +
+          u.license + "','" + u.club + "'," + !!u.notify + "," + Date.now() +
+        ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });
     });
   },
 
-  // Find one user by id, email, or token
+  // Find one user by email or token
   getOne: function(by, value, cb) {
+    // TODO: all possible values are strings now
     const delimiter = (typeof value === "string" ? "'" : "");
     db.serialize(function() {
       const query =
@@ -61,6 +69,16 @@ const UserModel = {
         "SELECT id, firstName, lastName, club " +
         "FROM Users " +
         "WHERE id IN (" + ids + ")";
+      db.all(query, cb);
+    });
+  },
+
+  getAll: function(cb) {
+    db.serialize(function() {
+      const query =
+        "SELECT id, firstName, lastName, club, license " +
+        "FROM Users " +
+        "WHERE active";
       db.all(query, cb);
     });
   },
@@ -107,9 +125,12 @@ const UserModel = {
     db.serialize(function() {
       const query =
         "UPDATE Users " +
-        "SET name = '" + user.name + "'" +
+        "SET firstName = '" + user.firstName + "'" +
+        ", lastName = '" + user.lastName + "'" +
         ", email = '" + user.email + "'" +
-        ", notify = " + user.notify + " " +
+        ", club = '" + user.club + "'" +
+        ", license = '" + user.license + "'" +
+        ", notify = " + !!user.notify + " " +
         "WHERE id = " + user.id;
       db.run(query);
     });
@@ -119,7 +140,7 @@ const UserModel = {
   // NOTIFICATIONS
 
   notify: function(user, message) {
-    const subject = "vchess.club - notification";
+    const subject = "tournament - notification";
     const body = "Hello " + user.name + " !" + `
 ` + message;
     sendEmail(params.mail.noreply, user.email, subject, body);

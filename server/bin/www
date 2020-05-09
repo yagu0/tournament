@@ -29,6 +29,7 @@ let cron = require('node-cron');
 const UserModel = require("../models/User");
 cron.schedule('0 0 0 * * *', function() {
   // Remove unlogged users every 24h
+  // (TODO: also un-activated users every week?)
   UserModel.cleanUsersDb();
 });
 

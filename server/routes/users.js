@@ -6,8 +6,6 @@ const access = require("../utils/access");
 const params = require("../config/parameters");
 
 router.post('/register', access.unlogged, access.ajax, (req,res) => {
-  const name = req.body.name;
-  const email = req.body.email;
   let user = req.body.user;
   if (UserModel.checkUser(user)) {
     UserModel.create(user, (err, ret) => {
@@ -28,13 +26,18 @@ router.post('/register', access.unlogged, access.ajax, (req,res) => {
 
 // NOTE: this method is safe because the sessionToken must be guessed
 router.get("/whoami", access.ajax, (req,res) => {
-  const callback = (user) => {
-    res.json(user);
-  };
-  if (!req.cookies.token) callback({});
+  if (!req.cookies.token) res.json({});
   else if (req.cookies.token.match(/^[a-z0-9]+$/)) {
     UserModel.getOne("sessionToken", req.cookies.token, (err, user) => {
-      callback(user || {});
+      if (!user) res.json({});
+      else {
+        // Some fields shouldn't be passed to the app:
+        delete user["loginToken"];
+        delete user["loginTime"];
+        delete user["sessionToken"];
+        delete user["created"];
+        res.json(user);
+      }
     });
   }
 });
@@ -43,23 +46,23 @@ router.get("/whoami", access.ajax, (req,res) => {
 router.get("/users", access.ajax, (req,res) => {
   const ids = req.query["ids"];
   // NOTE: slightly too permissive RegExp
-  if (ids.match(/^([0-9]+,?)+$/)) {
+  if (!!ids && !!ids.match(/^([0-9]+,?)+$/)) {
     UserModel.getByIds(ids, (err, users) => {
+      res.json({ users: users });
+    });
+  }
+  else {
+    // Retrieve all users:
+    UserModel.getAll((err, users) => {
       res.json({ users: users });
     });
   }
 });
 
 router.put('/update', access.logged, access.ajax, (req,res) => {
-  const name = req.body.name;
-  const email = req.body.email;
-  if (UserModel.checkNameEmail({name: name, email: email})) {
-    const user = {
-      id: req.userId,
-      name: name,
-      email: email,
-      notify: !!req.body.notify,
-    };
+  let user = req.body.user;
+  if (UserModel.checkUser(user)) {
+    user.id = req.userId; //in case of
     UserModel.updateSettings(user);
     res.json({});
   }
@@ -83,10 +86,9 @@ function setAndSendLoginToken(subject, to, res) {
 }
 
 router.get('/sendtoken', access.unlogged, access.ajax, (req,res) => {
-  const nameOrEmail = decodeURIComponent(req.query.nameOrEmail);
-  const type = (nameOrEmail.indexOf('@') >= 0 ? "email" : "name");
-  if (UserModel.checkNameEmail({[type]: nameOrEmail})) {
-    UserModel.getOne(type, nameOrEmail, (err,user) => {
+  const email = decodeURIComponent(req.query.email);
+  if (UserModel.checkEmail({email: email})) {
+    UserModel.getOne("email", email, (err,user) => {
       access.checkRequest(res, err, user, "Unknown user", () => {
         setAndSendLoginToken("Token for " + params.siteURL, user, res);
         res.json({});
@@ -111,13 +113,7 @@ router.get('/authenticate', access.unlogged, access.ajax, (req,res) => {
             secure: !!params.siteURL.match(/^https/),
             maxAge: params.cookieExpire,
           });
-          res.json({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            notify: user.notify,
-            active: user.active
-          });
+          res.json(user);
         });
       }
     });

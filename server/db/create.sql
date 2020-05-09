@@ -24,8 +24,6 @@ create table Tournaments (
   bothcol boolean,
   cadence varchar,
   nbRounds integer,
-  -- Current pairing (when tournament has started): list of UID pairs
-  pairing: text,
   completed boolean default false
 );
 
@@ -52,7 +50,6 @@ create table Games (
   round integer,
   score varchar,
   glink varchar,
-  -- Only one player ID is required, but it's easier with 2
   player1 integer,
   player2 integer,
   foreign key (tid) references Tournaments(id) on delete cascade

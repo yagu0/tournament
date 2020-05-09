@@ -4,7 +4,7 @@ div
     type="checkbox"
     @change="trySetEnterTime($event)"
   )
-  div#upsertDiv(
+  #upsertDiv(
     role="dialog"
     data-checkbox="modalUser"
   )
@@ -23,7 +23,7 @@ div
           @click="doLogout()"
         )
           | {{ st.tr["Logout"] }}
-        img(src="/images/icons/rightArrow.svg")
+        img(src="../assets/rightArrow.svg")
         | )
       div(@keyup.enter="onSubmit()")
         fieldset
@@ -70,7 +70,7 @@ div
 
 <script>
 import { store } from "@/store";
-import { checkNameEmail } from "@/data/userCheck";
+import { checkUser, checkEmail } from "@/data/userCheck";
 import { ajax } from "@/utils/ajax";
 import { processModalClick } from "@/utils/modalClick.js";
 export default {
@@ -171,18 +171,11 @@ export default {
           data: (
             this.stage == "Login"
               ? { email: this.user.email }
-              : this.user
+              : { user: this.user }
           ),
           success: () => {
             this.infoMsg = this.infoMessage();
-            if (this.stage != "Update") {
-              this.user.email = "";
-              this.user.firstName = "";
-              this.user.lastName = "";
-              this.user.license = "";
-              this.user.club = "";
-              this.user.notify = false;
-            }
+            if (this.stage != "Update") this.user = {};
             else this.st.user = JSON.parse(JSON.stringify(this.user));
           },
           error: (err) => {

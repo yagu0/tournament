@@ -10,25 +10,35 @@ const db = require("../utils/database");
  *   player2: integer
  */
 
+const allowedScores = [
+  "1-0",
+  "0-1",
+  "1/2",
+  "1-F",
+  "F-1",
+  "F-F"
+];
+
 const GameModel = {
   checkGame: function(g) {
     return (
       !!g.tid && !!g.tid.match(/^[0-9]+$/) &&
       !!g.player1 && !!g.player1.match(/^[0-9]+$/) &&
       !!g.player2 && !!g.player2.match(/^[0-9]+$/) &&
-      !!g.round && !!g.round.match(/^[0-9]+$/)
+      !!g.round && !!g.round.match(/^[0-9]+$/) &&
+      (!g.score || !allowedScores.includes(g.score))
     );
   },
 
-  create: function(p, cb) {
+  create: function(g, cb) {
     db.serialize(function() {
       const query =
         "INSERT INTO Games " +
         "(tid, round, score, glink, player1, player2) " +
           "VALUES " +
-        "(" + g.tid + "," + g.round + ",'" + g.score + "','" +
-            g.glink + "'," + g.player1 + "," + g.player2 + ")";
-      db.run(query, function(err) {
+        "(" + g.tid + "," + g.round + ",'" + g.score + "'," +
+            "? ," + g.player1 + "," + g.player2 + ")";
+      db.run(query, g.glink, function(err) {
         cb(err, { id: this.lastID });
       });
     });
