@@ -10,6 +10,7 @@ const db = require("../utils/database");
  *   cadence: varchar
  *   completed: boolean
  *   nbRounds: integer >= 1
+ *   quit, ban: varchar (stringified integer vectors)
  */
 
 const allowedWebsite = [
@@ -83,6 +84,16 @@ const TournamentModel = {
     });
   },
 
+  togglePlayer: function(tid, quit, ban) {
+    db.serialize(function() {
+      let query = "UPDATE Tournaments SET ";
+      if (!!quit) query += "quit = " + quit + ",";
+      if (!!ban) query += "ban = " + ban + ",";
+      query = query.slice(0, -1) + "WHERE id = " + tid;
+      db.run(query);
+    });
+  },
+
   safeRemove: function(id, uid, admin) {
     db.serialize(function() {
       let whereClause = "WHERE id = " + id;
@@ -93,6 +104,6 @@ const TournamentModel = {
       db.run(query);
     });
   },
-}
+};
 
 module.exports = TournamentModel;

@@ -24,6 +24,8 @@ create table Tournaments (
   bothcol boolean,
   cadence varchar,
   nbRounds integer,
+  quit varchar default '[]',
+  ban varchar default '[]',
   completed boolean default false
 );
 

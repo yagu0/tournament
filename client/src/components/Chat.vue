@@ -9,7 +9,7 @@ div
   )
   button(@click="sendChat()") {{ st.tr["Send"] }}
   p(v-for="chat in chats.concat(pastChats)")
-    span.name {{ chat.name || "@nonymous" }} :&nbsp;
+    span.name {{ chat.name }} :&nbsp;
     span(
       :class="classObject(chat)"
       v-html="chat.msg"

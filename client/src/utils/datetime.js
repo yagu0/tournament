@@ -27,8 +27,6 @@ function padDigits(x) {
   return x;
 }
 
-// TODO: adapt this function, show countdown when on TOurnament view,
-// otherwise just show formatted datetime.
 export function ppt(t) {
   // "Pretty print" an amount of time given in seconds
   const dayInSeconds = 60 * 60 * 24;

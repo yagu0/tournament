@@ -40,6 +40,6 @@ const ExemptModel = {
       });
     });
   }
-}
+};
 
 module.exports = ExemptModel;

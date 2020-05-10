@@ -1,5 +1,51 @@
 <template lang="pug">
 main
+  input#modalNewtour.modal(type="checkbox")
+  #newtourDiv(
+    role="dialog"
+    data-checkbox="modalNewtour"
+  )
+    .card
+      label.modal-close(for="modalNewtour")
+      h3.section New tournament
+      div(@keyup.enter="onSubmit()")
+        fieldset
+          label(for="t_dtstart") {{ st.tr["Start time"] }}
+          input#t_dtstart(
+            type="datetime-local"
+            v-model="newtour.dtstart"
+          )
+        fieldset
+          label(for="t_title") {{ st.tr["Title"] }}
+          input#t_title(
+            type="text"
+            v-model="newtour.title"
+          )
+        fieldset
+          label(for="t_website") {{ st.tr["Platform"] }}
+          select#t_website(v-model="newtour.dtstart")
+            option(value="lichess") lichess.org
+            option(value="vchess") vchess.club
+        fieldset
+          label(for="t_bothcol") {{ st.tr["Play both colors?"] }}
+          input#t_bothcol(
+            type="checkbox"
+            v-model="newtour.bothcol"
+          )
+        fieldset
+          label(for="t_cadence") {{ st.tr["Cadence"] }}
+          input#t_cadence(
+            type="text"
+            v-model="newtour.cadence"
+          )
+        fieldset
+          label(for="t_nbRounds") {{ st.tr["Rounds count"] }}
+          input#t_nbRounds(
+            type="number"
+            v-model="newtour.nbRounds"
+          )
+      button#submitBtn(@click="onSubmit()")
+        | {{ st.tr["Send"] }}
   .row
     .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
       h4 {{ st.tr["Tournaments"] }}
@@ -10,10 +56,16 @@ main
           | {{ st.tr["In progress"] }}
         button.tabbtn#nextTournaments(@click="setDisplay('next',$event)")
           | {{ st.tr["Upcoming"] }}
+      button#newTournament(
+        v-if="isAdmin"
+        @click="showNewTournamentModal()"
+      )
+        | New tournament
       TournamentList(
         v-show="display=='past'"
         :tournaments="pastTournaments"
       )
+      // TODO: delete + edit options if admin, for current and next tournaments
       TournamentList(
         v-show="display=='curr'"
         :tournaments="currTournaments"
@@ -32,6 +84,7 @@ main
 <script>
 import { store } from "@/store";
 import { ajax } from "@/utils/ajax";
+import { checkTournament } from "@/data/tournamentCheck";
 import params from "@/parameters";
 import { getRandString } from "@/utils/alea";
 import TournamentList from "@/components/TournamentList.vue";
@@ -42,6 +95,7 @@ export default {
     return {
       st: store.state,
       display: "",
+      newtour: {},
       pastTournaments: [],
       currTournaments: [],
       nextTournaments: [],
@@ -55,6 +109,11 @@ export default {
     $route: function(to, from) {
       if (to.path != "/") this.cleanBeforeDestroy();
     }
+  },
+  computed: {
+    isAdmin: function() {
+      return params.admin.includes(this.st.user.id);
+    },
   },
   created: function() {
     window.addEventListener("beforeunload", this.cleanBeforeDestroy);
@@ -97,8 +156,33 @@ export default {
         (!!e ? e.target : document.getElementById(type + "Tournaments"));
       elt.classList.add("active");
       for (let t of ["past","curr","next"]) {
-        if (t != type)
-          document.getElementById(t + "Tournaments").classList.remove("active");
+        if (t != type) {
+          document.getElementById(t + "Tournaments")
+            .classList.remove("active");
+        }
+      }
+    },
+    showNewTournamentModal: function() {
+      this.newtour = {};
+      doClick("modalNewtour");
+    },
+    onSubmit: function() {
+      const error = checkTournament(this.newtour);
+      if (!!error) alert(error);
+      else {
+        ajax(
+          "/tournaments",
+          "POST",
+          {
+            data: { tournament: this.newtour },
+            success: (ret) => {
+              let newTour = JSON.parse(JSON.stringify(this.newtour));
+              newTour.id = ret.id;
+              this.nextTournaments.push(newTour);
+              this.newtour = {};
+            }
+          }
+        );
       }
     },
     loadMore: function(type, cb) {
@@ -111,7 +195,8 @@ export default {
             const L = res.tournaments.length;
             if (L > 0) {
               this.cursor = res.tournaments[L - 1].dtstart;
-              this.pastTournaments = this.pastTournaments.concat(res.tournaments);
+              this.pastTournaments =
+                this.pastTournaments.concat(res.tournaments);
             }
             else this.hasMore = false;
             if (!!cb) cb();

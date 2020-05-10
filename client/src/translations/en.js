@@ -53,6 +53,8 @@ export const translations = {
   "Registration complete! Please check your emails now": "Registration complete! Please check your emails now",
   "Remove tournament?": "Remove tournament?",
   Result: "Result",
+  Score: "Score",
+  "Score (forfeit)": "Score (forfeit)",
   Send: "Send",
   Settings: "Settings",
   "Sound alert at new round": "Sound alert at new round",

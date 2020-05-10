@@ -4,9 +4,10 @@ const params = require("../config/parameters");
 const PlayerModel = require("../models/Player");
 
 router.post("/players", access.logged, access.ajax, (req,res) => {
-  const player = req.body.player;
+  let player = req.body.player;
   if (PlayerModel.checkPlayer(player)) {
-    TournamentModel.create(player, (err, ret) => {
+    player.uid = req.userId;
+    PlayerModel.create(player, (err, ret) => {
       res.json(err || ret);
     });
   }
@@ -22,7 +23,7 @@ router.get("/players", access.ajax, (req,res) => {
 });
 
 router.put("/players", access.logged, access.ajax, (req,res) => {
-  let obj = req.body.player;
+  const obj = req.body.player;
   if (PlayerModel.checkPlayer(obj)) {
     PlayerModel.safeUpdate(obj, req.userId, params.admin);
     res.json({});

@@ -68,6 +68,15 @@ router.put('/update', access.logged, access.ajax, (req,res) => {
   }
 });
 
+// Toggle active flag:
+router.put('/de_activate', access.logged, access.ajax, (req,res) => {
+  const id = req.body.uid;
+  if (!!id && !!id.match(/^[0-9]+$/)) {
+    UserModel.toggleActive(!!req.body.active);
+    res.json({});
+  }
+});
+
 // Authentication-related methods:
 
 // to: object user (to who we send an email)

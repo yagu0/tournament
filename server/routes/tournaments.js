@@ -16,12 +16,12 @@ router.post("/tournaments", access.logged, access.ajax, (req,res) => {
 router.get("/tournaments", access.ajax, (req,res) => {
   const tourId = req.query["id"];
   const cursor = req.query["cursor"];
-  if (!!tourId && !!tourId.match(/^[0-9]+$/)) {
+  if (!!tourId && !!tourId.toString().match(/^[0-9]+$/)) {
     TournamentModel.getOne(tourId, (err, tournament) => {
-      res.json(err || {tournament: tournament});
+      res.json(err || { tournament: tournament });
     });
   }
-  else if (!!cursor && !!cursor.match(/^[0-9]+$/)) {
+  else if (!!cursor && !!cursor.toString().match(/^[0-9]+$/)) {
     TournamentModel.getNext(cursor, (err, tournaments) => {
       res.json(err || { tournaments: tournaments });
     });
@@ -29,12 +29,26 @@ router.get("/tournaments", access.ajax, (req,res) => {
 });
 
 router.put("/tournaments", access.logged, access.ajax, (req,res) => {
-  let obj = req.body.tournament;
-  if (
-    params.admin.includes(req.userId) &&
-    TournamentModel.checkTournament(obj)
-  ) {
-    TournamentModel.modify(obj);
+  if (!!req.body.tid && !!req.body.tid.toString().match(/^[0-9]+$/)) {
+    // Toggle ban or quit
+    const tid = req.body.tid,
+          quit = req.body.quit,
+          ban = req.body.ban;
+    if (
+      params.admin.includes(req.userId) &&
+      TournamentModel.checkQuitBan({ quit: quit, ban: ban })
+    ) {
+      TournamentModel.togglePlayer(tid, quit, ban);
+    }
+  }
+  else {
+    const obj = req.body.tournament;
+    if (
+      params.admin.includes(req.userId) &&
+      TournamentModel.checkTournament(obj)
+    ) {
+      TournamentModel.modify(obj);
+    }
   }
   res.json({});
 });

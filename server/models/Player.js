@@ -53,6 +53,6 @@ const PlayerModel = {
       db.run(query);
     });
   }
-}
+};
 
 module.exports = PlayerModel;

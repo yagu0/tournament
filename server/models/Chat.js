@@ -37,6 +37,6 @@ const ChatModel = {
       });
     });
   }
-}
+};
 
 module.exports = ChatModel;

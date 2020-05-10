@@ -136,6 +136,16 @@ const UserModel = {
     });
   },
 
+  toggleActive: function(id, active) {
+    db.serialize(function() {
+      const query =
+        "UPDATE Users " +
+        "SET active = '" + active + "'" +
+        "WHERE id = " + id;
+      db.run(query);
+    });
+  },
+
   /////////////////
   // NOTIFICATIONS
 
@@ -186,6 +196,6 @@ const UserModel = {
       });
     });
   },
-}
+};
 
 module.exports = UserModel;

@@ -11,7 +11,7 @@ main
       tbody
         tr(
           v-for="u in sortedUsers"
-          @click="showActions(u)"
+          @click="tryToggleActive(u)"
         )
           td {{ u.lastName }}
           td {{ u.firstName }}
@@ -46,8 +46,10 @@ export default {
   },
   computed: {
     sortedUsers: function() {
+      const admin = params.admin.includes(this.st.user.id);
       return (
         this.users
+        .filter(u => admin || u.active)
         .sort((u1, u2) => {
           if (u1.lname == u2.lname)
             return u1.firstName.localeCompare(u2.firstName);
@@ -57,9 +59,24 @@ export default {
     }
   },
   methods: {
-    showActions: function(u) {
-      if (!(params.admin.includes(this.st.user.id))) return;
-      // TODO: allow edit, delete, activate: re-using Upsertuser from App (how?)
+    tryToggleActive: function(u) {
+      if (
+        !(params.admin.includes(this.st.user.id)) ||
+        params.admin.includes(u.id)
+      ) {
+        return;
+      }
+      u.active = !u.active;
+      ajax(
+        "/de_activate",
+        "PUT",
+        {
+          data: {
+            id: u.id,
+            active: u.active
+          }
+        }
+      );
     }
   }
 };

@@ -33,7 +33,6 @@ export default {
   },
   methods: {
     showTournament: function(t) {
-      // TODO: something else?
       this.$router.push("/tournament/" + t.id);
     },
     sortedTournaments: function() {
@@ -45,7 +44,6 @@ export default {
         .sort((t1, t2) => t2.dtstart - t1.dtstart)
       );
     }
-    // TODO: create, delete + edit options if admin
   }
 };
 </script>

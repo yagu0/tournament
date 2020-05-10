@@ -14,6 +14,11 @@ const allowedScores = [
   "1-0",
   "0-1",
   "1/2",
+  "+2",
+  "+1",
+  "=",
+  "-1",
+  "-2",
   "1-F",
   "F-1",
   "F-F"
@@ -69,6 +74,6 @@ const GameModel = {
       db.run(query);
     });
   }
-}
+};
 
 module.exports = GameModel;
