@@ -32,7 +32,7 @@ const ChatModel = {
         "SELECT * " +
         "FROM Chats " +
         "WHERE tid = " + tid;
-      db.get(query, (err, chats) => {
+      db.all(query, (err, chats) => {
         cb(err, chats || []);
       });
     });

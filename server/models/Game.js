@@ -55,7 +55,7 @@ const GameModel = {
         "SELECT * " +
         "FROM Games " +
         "WHERE tid = " + tid;
-      db.get(query, (err, games) => {
+      db.all(query, (err, games) => {
         cb(err, games || []);
       });
     });

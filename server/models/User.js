@@ -36,14 +36,20 @@ const UserModel = {
 
   create: function(u, cb) {
     db.serialize(function() {
-      const query =
+      let query =
         "INSERT INTO Users " +
-        "(firstName, lastName, email, license, club, notify, created) " +
+        "(firstName, lastName, email, notify, created";
+      if (!!u.license) query += ", license";
+      if (!!u.club) query += ", club";
+      query += ")";
+      query +=
         "VALUES " +
         "('" +
-          u.firstName + "','" + u.lastName + "','" + u.email + "','" +
-          u.license + "','" + u.club + "'," + !!u.notify + "," + Date.now() +
-        ")";
+          u.firstName + "','" + u.lastName + "','" + u.email + "'," +
+          !!u.notify + "," + Date.now();
+      if (!!u.license) query += ",'" + u.license + "'";
+      if (!!u.club) query += ",'" + u.club + "'";
+      query += ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });
@@ -76,9 +82,8 @@ const UserModel = {
   getAll: function(cb) {
     db.serialize(function() {
       const query =
-        "SELECT id, firstName, lastName, club, license " +
-        "FROM Users " +
-        "WHERE active";
+        "SELECT id, firstName, lastName, club, license, active " +
+        "FROM Users";
       db.all(query, cb);
     });
   },

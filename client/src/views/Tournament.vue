@@ -16,6 +16,17 @@ main
         @mychat="processChat"
         @chatcleared="clearChat"
       )
+  input#modalTinfos.modal(type="checkbox")
+  div#tinfosWrap(
+    role="dialog"
+    data-checkbox="modalTinfos"
+  )
+    .card
+      label.modal-close(for="modalTinfos")
+      #tournamentInfos
+        p {{ st.tr["Cadence"] }} : {{ tournament.cadence }}
+        p {{ tournament.nbRounds }} {{ st.tr["rounds"] }}
+        p(v-if="tournament.bothcol") st.tr["Round trip"]
   input#modalJoin.modal(type="checkbox")
   div#joinWrap(
     role="dialog"
@@ -25,19 +36,19 @@ main
       label.modal-close(for="modalJoin")
       fieldset
         label(for="joinName") {{ st.tr["User name"] }}
-        input#joinName(type="text" v-model="newName")
+        input#joinName(type="text" v-model="newPlayer.name")
       fieldset
-        label(for="joinElo") {{ st.tr["Known rating:"] }}
-        input#joinElo(type="number" v-model="newElo")
+        label(for="joinElo") {{ st.tr["Known rating"] }}
+        input#joinElo(type="number" v-model="newPlayer.elo")
         label(for="joinEstimElo") {{ st.tr["Unknown rating:"] }}
-        .button-group#joinEstimElo
-          button(@click="setElo(1200)") Beginner
-          button(@click="setElo(1500)") Intermediate
-          button(@click="setElo(1800)") Good player
-          button(@click="setElo(2100)") Expert
-          button(@click="setElo(2400)") Master
+        select#joinEstimElo(v-model="newPlayer.elo")
+          option(value="1200") Beginner
+          option(value="1500") Intermediate
+          option(value="1800") Good player
+          option(value="2100") Expert
+          option(value="2400") Master
       fieldset
-        button(@click="joinTournament()") Send
+        button(@click="re_joinTournament()") {{ st.tr["Send"] }}
   input#modalGamelink.modal(type="checkbox")
   div#gamelinkWrap(
     role="dialog"
@@ -48,7 +59,7 @@ main
       fieldset
         label(for="gamelink") {{ st.tr["Game link"] }}
         input#gamelink(type="text" v-model="curGame.gameLink")
-        button(@click="setGamelink()") Send
+        button(@click="setGamelink()") {{ st.tr["Send"] }}
   input#modalScore.modal(type="checkbox")
   div#scoreWrap(
     role="dialog"
@@ -82,14 +93,13 @@ main
           button.black-win F-1
   .row
     #aboveTour.col-sm-12
-      span {{ tournament.title }} 
-      span {{ tournament.cadence }} 
-      span {{ tournament.nbRounds }}
+      span.clickable(onClick="window.doClick('modalTinfos')")
+        | {{ tournament.title }}
       button#chatBtn(
         onClick="window.doClick('modalChat')"
         aria-label="Chat"
       )
-        span Chat
+        | Chat
         img(src="../assets/chat.svg")
   .row
     .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
@@ -99,11 +109,16 @@ main
         button.tabbtn#tournament(@click="setDisplay('tournament',$event)")
           | {{ st.tr["Tournament"] }}
       div(v-show="display=='players'")
-        button(
-          v-if="showConfirmButton"
+        button#confirmBtn(
+          v-if="showConfirmButton()"
           @click="confirmParticipation()"
         )
           | {{ Confirm }}
+        button#joinBtn(
+          v-if="showJoinButton()"
+          onClick="window.doClick('modalJoin')"
+        )
+          | {{ st.tr["Join"] }}
         table
           thead
             tr
@@ -114,13 +129,14 @@ main
           tbody
             tr(
               v-for="p in sortedPlayers()"
-              @click="tryTogglePlayer(p)"
+              @click="tryActionPlayer(p)"
+              @contextmenu="tryShowDeleteBox(p)"
+              :class="{quit: p.quit}"
             )
               td {{ p.firstName + " " + p.lastName }}
               td {{ p.name }}
               td {{ p.elo }}
               td {{ p.club }}
-        button(onClick="window.doClick('modalJoin')") Join
       div(v-show="display=='tournament'")
         div(v-if="!!tournament.completed")
           table(v-if="!!finalGrid")
@@ -166,7 +182,7 @@ main
                 td(@click="tryShowModalScore(g)") {{ g.score }}
                 td(@click="setLinkOrShowGame(g)") {{ viewGameBtn(g) }}
               tr(v-if="!!exempts[rounds.length-1]")
-                td {{ exempts[rounds.length-1] }}
+                td {{ nameAndScore(exempts[rounds.length-1]) }}
                 td -
                 td E
                 td &nbsp;
@@ -178,7 +194,7 @@ main
         div(v-else)
           p
             span Time before start:
-            span {{ remainingTime }}
+            span#countdown
 </template>
 
 <script>
@@ -194,6 +210,7 @@ import { processModalClick } from "@/utils/modalClick.js";
 import params from "@/parameters";
 // Time before a tournament to confirm registration: 45 minutes
 const CONFIRM_WINDOW = 45*60*1000;
+let countdown = 0;
 export default {
   name: "my-tournament",
   components: { Chat },
@@ -208,9 +225,7 @@ export default {
       scores: {}, //current results
       exempts: [],
       finalGrid: null,
-      newName: "",
-      newElo: 0,
-      countdown: 0,
+      newPlayer: {},
       timer: null,
       socketCloseListener: null,
       curGame: {}, //for tryShowModalScore(g) "callback"
@@ -234,8 +249,8 @@ export default {
     this.atCreation();
   },
   mounted: function() {
-    ["gamelinkWrap","scoreWrap","joinWrap"].forEach(elt => {
-      document.getElementById(elt)
+    ["gamelink","score","join","tinfos"].forEach(elt => {
+      document.getElementById(elt + "Wrap")
         .addEventListener("click", processModalClick);
     });
     document.getElementById("chatWrap").addEventListener("click", (e) => {
@@ -244,10 +259,10 @@ export default {
       });
     });
   },
-  computed: {
-    remainingTime: function() {
-      return ppt(this.countdown);
-    },
+  beforeDestroy: function() {
+    this.cleanBeforeDestroy();
+  },
+  methods: {
     showConfirmButton: function() {
       const now = Date.now();
       return (
@@ -256,12 +271,14 @@ export default {
         Object.keys(this.players).includes(this.st.user.id) &&
         !!this.players[this.st.user.id].quit
       );
-    }
-  },
-  beforeDestroy: function() {
-    this.cleanBeforeDestroy();
-  },
-  methods: {
+    },
+    showJoinButton: function() {
+      return (
+        Date.now() < this.tournament.dtstart &&
+        this.st.user.id > 0 &&
+        !Object.keys(this.players).includes(this.st.user.id.toString())
+      );
+    },
     cleanBeforeDestroy: function() {
       if (!!this.timer) clearInterval(this.timer);
       if (!!this.conn) {
@@ -305,10 +322,13 @@ export default {
           }
         }
         else {
-          this.countdown = this.tournament.dtstart - now;
+          countdown = this.tournament.dtstart - now;
+          let remainingTime = document.getElementById("countdown");
+          remainingTime.innerHTML = ppt(countdown);
           this.timer = setInterval(
             () => {
-              if (--this.countdown <= 0) clearInterval(this.timer);
+              if (--countdown <= 0) clearInterval(this.timer);
+              else remainingTime.innerHTML = ppt(countdown);
             },
             1000
           );
@@ -321,8 +341,6 @@ export default {
           data: { id: this.$route.params["id"] },
           success: (res) => {
             this.tournament = res.tournament;
-            this.tournament.quit = JSON.parse(res.tournament.quit);
-            this.tournament.ban = JSON.parse(res.tournament.ban);
             setSocketVars();
             ajax(
               "/players",
@@ -330,6 +348,7 @@ export default {
               {
                 data: { tid: this.$route.params["id"] },
                 success: (res) => {
+                  if (!res.players || res.players.length == 0) return;
                   ajax(
                     "/users",
                     "GET",
@@ -345,14 +364,18 @@ export default {
                             club: u.club
                           };
                         });
-                        for (q of this.tournament.quit) users[q].quit = true;
-                        for (b of this.tournament.ban) users[b].ban = true;
                         res.players.forEach(p => {
-                          this.players[p.uid] =
+                          this.$set(this.players, p.uid,
                             Object.assign(
-                              { name: p.name, elo: p.elo },
+                              {
+                                name: p.name,
+                                elo: p.elo,
+                                quit: p.quit,
+                                ban: p.ban
+                              },
                               users[p.uid]
-                            );
+                            )
+                          );
                           if (p.uid == this.st.user.id)
                             this.st.user.name = p.name;
                         });
@@ -438,18 +461,33 @@ export default {
       const otherType = (type == "players" ? "tournament" : "players");
       document.getElementById(otherType).classList.remove("active");
     },
-    joinTournament: function() {
-      const newPlayer = {
-        elo: this.newElo,
-        name: this.newName,
-      };
+    re_joinTournament: function() {
+      document.getElementById("modalJoin").checked = false;
+      if (Object.keys(this.players).some(k => k == this.st.user.id)) {
+        // Edit mode: elo and/or (user) name may have changed
+        this.$set(this.players, this.st.user.id,
+          Object.assign(this.players[this.st.user.id], this.newPlayer));
+        ajax(
+          "/players",
+          "PUT",
+          {
+            data: {
+              player:
+                Object.assign({ tid: this.tournament.id }, this.newPlayer)
+            }
+          }
+        );
+        return;
+      }
+      const earlyRegistration =
+        (Date.now() < this.tournament.dtstart - CONFIRM_WINDOW);
+      const newPlayer =
+        Object.assign({ quit: earlyRegistration }, this.newPlayer);
       const error = checkPlayer(newPlayer);
       if (!!error) {
         alert(error);
         return;
       }
-      const earlyRegistration =
-        (Date.now() < this.tournament.dtstart - CONFIRM_WINDOW);
       ajax(
         "/players",
         "POST",
@@ -458,33 +496,19 @@ export default {
             player: Object.assign({ tid: this.tournament.id }, newPlayer)
           },
           success: (res) => {
-            this.players[res.id] =
+            this.$set(this.players, this.st.user.id,
               Object.assign(
                 {
                   firstName: this.st.user.firstName,
                   lastName: this.st.user.lastName,
-                  club: this.st.user.club,
-                  quit: earlyRegistration
+                  club: this.st.user.club
                 },
                 newPlayer
-              );
+              )
+            );
           }
         }
       );
-      if (earlyRegistration) {
-        // Before 45 min before tournament start: mark as "quit"
-        this.tournament.quit.push(this.st.user.id);
-        ajax(
-          "/tournaments",
-          "PUT",
-          {
-            data: {
-              tid: this.tournament.id,
-              quit: this.tournament.quit
-            }
-          }
-        );
-      }
     },
     nameAndScore: function(uid) {
       return this.players[uid].name + "[" + this.scores[uid] + "]";
@@ -499,62 +523,71 @@ export default {
         "PUT",
         {
           data: {
+            uid: this.st.user.id,
             tid: this.tournament.id,
-            quit: this.tournament.quit
+            quit: JSON.stringify(this.tournament.quit)
           }
         }
       );
     },
-    tryTogglePlayer: function(p) {
-      if (
-        this.tournament.completed ||
-        Date.now() < this.tournament.dtstart - CONFIRM_WINDOW
-      ) {
-        // Either too early or too late: no action to perform
+    tryShowDeleteBox: function(e, p) {
+      if (this.st.user.id == p.uid) {
+        e.preventDefault();
+        if (confirm(this.st.tr["Withdraw from tournament?"])) {
+          ajax(
+            "/players",
+            "DELETE",
+            {
+              data: { tid: this.tournament.id }
+            }
+          );
+        }
+      }
+    },
+    tryActionPlayer: function(p) {
+      const admin = params.admin.includes(this.st.user.id);
+      const targetSelf = (this.st.user.id == p.uid);
+      if (this.tournament.completed || (!targetSelf && !admin)) {
+        // Too late, or "unauthorized" user: no action to perform
         window.open(this.getProfileLink(p.name), "_blank");
       }
       else {
-        const admin = params.admin.includes(this.st.user.id);
-        if (!admin && p.name != this.st.user.name)
-          // Nothing to toggle: just show player's profile
-          window.open(this.getProfileLink(p.name), "_blank");
-        else {
-          let banned = false;
-          const initSize = {
-            quit: this.tournament.quit.length,
-            ban: this.tournament.ban.length
+        // Allow changes until T - 5min (seems reasonable)
+        if (
+          Date.now() < this.tournament.dtstart - 5*60*1000 &&
+          (!admin || targetSelf)
+        ) {
+          this.newPlayer = {
+            name: p.name,
+            elo: p.elo
           };
-          const banIdx = this.tournament.ban.findIndex(b => b == p.uid);
-          if (banIdx >= 0) {
+          doClick("modalJoin");
+        }
+        else {
+          // admin || p.uid == my id, tournament no over
+          let changeBan = false,
+              changeQuit = false;
+          if (p.ban) {
             if (!admin || !confirm("Unban player?")) return;
-            this.tournament.ban.splice(banIdx, 1);
-            this.players[p.uid].ban = false;
+            p.ban = false;
+            changeBan = true;
           }
           else if (admin && confirm("Ban player?")) {
-            this.tournament.ban.push(p.uid);
-            this.players[p.uid].ban = true;
-            banned = true;
+            p.ban = true;
+            changeBan = true;
           }
-          if (!banned) {
-            const quitIdx = this.tournament.quit.findIndex(q => q == p.uid);
-            if (quitIdx >= 0) {
-              this.tournament.quit.splice(quitIdx, 1);
-              this.players[p.uid].quit = false;
-            }
-            else {
-              this.tournament.quit.push(p.uid);
-              this.players[p.uid].quit = true;
-            }
+          if (!changeBan) {
+            this.$set(this.players, p.uid,
+              Object.assign(p, { quit: !p.quit }));
+            changeQuit = true;
           }
-          let data = { tid: this.tournament.id };
-          if (this.tournament.quit.length != initSize["quit"])
-            data.quit = this.tournament.quit;
-          if (this.tournament.ban.length != initSize["ban"])
-            data.ban = this.tournament.ban;
+          let data = { tid: this.tournament.id, uid: p.uid };
+          if (changeQuit) data.quit = p.quit;
+          if (changeBan) data.ban = p.ban;
           ajax(
-            "/tournaments",
+            "/toggle",
             "PUT",
-            { data: data }
+            { data: { banQuit: data } }
           );
         }
       }
@@ -578,13 +611,162 @@ export default {
         )
       );
     },
-    computePairings: function() {
-              // pairing = round + exempt
-      // TODO: rounds[L-1] is supposed completed,
-      // add a column and fill it with new pairing.
-      // TODO: need to keep track or recompute current scores.
-      //this.scores = ... TODO: compute current scores. (useful for pairing anyway)
+    scoreSymbToValues: function(score) {
+      switch (score) {
+        case "1-0": return [1, 0];
+        case "1/2": return [0.5, 0.5];
+        case "0-1": return [0, 1];
+        case "1-F": return [1, 0];
+        case "F-1": return [0, 1];
+        case "F-F": return [0, 0];
+        case "+2": return [2, 0];
+        case "+1": return [1.5, 0.5];
+        case "=": return [1, 1];
+        case "-1": return [0.5, 1.5];
+        case "-2": return [0, 2];
+      }
+      return []; //never reached
     },
+    increment: function(obj, field) {
+      if (!obj[field]) obj[field] = 1;
+      else obj[field]++;
+    },
+    // rounds[L-1] is supposed completed:
+    computePairings: function() {
+      let activePlayers =
+        Object.keys(this.players).filter(k => this.players[k].active);
+      let n = activePlayers.length;
+      const L = this.rounds.length;
+      let state = {};
+      activePlayers.forEach(k => {
+        state[k] = {
+          met: {},
+          score: 0,
+          // NOTE: colors are used only if !tournament.bothcol
+          colors: { W: 0, B: 0 },
+          exempt: 0
+        };
+      });
+      for (let i=0; i<L; i++) {
+        if (!!this.exempts[i]) {
+          state[this.exempts[i]].exempt++;
+          state[this.exempts[i]].score++;
+        }
+        else {
+          this.rounds[i].forEach(g => {
+            const scores = this.scoreSymbToValues(g.score);
+            state[g.player1].score += scores[0];
+            state[g.player2].score += scores[1];
+            this.increment(state[g.player1].met, g.player2);
+            this.increment(state[g.player2].met, g.player1);
+            state[g.player1].colors['W']++;
+            state[g.player2].colors['B']++;
+          });
+        }
+      }
+      let pairing = { round: [] };
+      if (n % 2 == 1) {
+        // Determine a player out for this round
+        let exempt = -1;
+        let minScore = Infinity;
+        activePlayers.forEach(p => {
+          const scoreE =
+            state[p.uid].exempt +
+            // Divide by 2(4) * L to work with bothcol == true or not
+            state[p.uid].score / (2 * L) +
+            (1 - 1 / this.players[p.uid].elo) / (4 * L);
+          if (scoreE < minScore) {
+            minScore = scoreE;
+            exempt = p.uid;
+          }
+        });
+        pairing.exempt = exempt;
+        const aIdx = activePlayers.findIndex(p => p == exempt);
+        activePlayers.splice(aIdx, 1);
+        n--;
+      }
+      // Compute distances (half) matrix for core pairing algorithm
+      let edges = [];
+      for (let i=0; i < n - 1; i++) {
+        const scoreI = state[activePlayers[i]].score;
+        const eloI = this.players[activePlayers[i]].elo;
+        for (let j=i+1; j < n; j++) {
+          const scoreJ = state[activePlayers[j]].score;
+          const eloJ = this.players[activePlayers[j]].elo;
+          const distIJ =
+            // 500: arbitrary value (should be greater than number of rounds)
+            500 * state[activePlayers[i]].met[activePlayers[j]] +
+              Math.abs(scoreI - scoreJ) + 1 / (5 + Math.abs(eloI - eloJ));
+          // Negative distance, because the algorithm maximize the cost
+          edges.push([i, j, -distIJ]);
+        }
+      }
+      const assignment = mwmatching3(edges, maxcardinality=true);
+
+      // TODO: translate final part (adapt?)
+//      assignment <- findPairing(distances)
+//      assignment <- activePlayers[assignment]
+//      pairing <- ""
+//      alreadyPaired <- rep(F, n)
+//      colors <- rep('B', n)
+//      for (i in seq_along(assignment)) {
+//        if (!alreadyPaired[activePlayers[i]]) {
+//          # Color assignment: the player who had black the most takes white.
+//          # In case of equality: random choice.
+//          ordering <- c(activePlayers[i], assignment[i])
+//          if (
+//            state[[activePlayers[i]]]$colors[["N"]] <
+//            state[[assignment[i]]]$colors[["N"]]
+//          ) {
+//            ordering <- c(assignment[i], activePlayers[i])
+//          }
+//          else if (
+//            state[[activePlayers[i]]]$colors[["N"]] ==
+//            state[[assignment[i]]]$colors[["N"]]
+//          ) {
+//            if (sample(2, 1) == 2) ordering <- c(assignment[i], activePlayers[i])
+//          }
+//          alreadyPaired[ordering[1]] <- T
+//          alreadyPaired[ordering[2]] <- T
+//          pairing <- paste0(
+//            pairing,
+//            tournament[ordering[1],"id"],
+//            "[",
+//            state[[ordering[1]]]$score,
+//            "]",
+//            " vs. ",
+//            tournament[ordering[2],"id"],
+//            "[",
+//            state[[ordering[2]]]$score,
+//            "]",
+//            "\n"
+//          )
+//          if (ordering[1] == activePlayers[i]) colors[assignment[i]] <- 'N'
+//          else colors[activePlayers[i]] <- 'N'
+//        }
+//      }
+//      if (exempt >= 1) {
+//        pairing <- paste0(
+//          pairing,
+//          tournament[exempt,"id"],
+//          "[",
+//          state[[exempt]]$score,
+//          "] exempt\n"
+//        )
+//      }
+//      # Print pairings
+//      cat(pairing)
+//      # Also output the permutation in a human+machine readable way
+//      if (exempt >= 1) {
+//        activePlayers <- c(activePlayers, exempt)
+//        assignment <- c(assignment, exempt)
+//      }
+//      list(cbind(activePlayers, assignment), colors[activePlayers])
+
+      this.rounds.push(pairing.round);
+      this.exempts.push(pairing.exempt || null);
+    },
+    // TODO:
     computeFinalGrid: function() {
       const t = this.tournament;
       // 'rounds' array is supposed full
@@ -598,7 +780,8 @@ export default {
         .sort((si1,si2) => si2[0] - si1[0])
         .map(si => si[1]);
       // TODO: use ranking here, to reorder (unused in display)
-      // + finalGrid.rounds[i][j].url contient les gameLinks (si dispo, sinon pas de lien) [ + .value ]
+      // + finalGrid.rounds[i][j].url contient les gameLinks
+      // (si dispo, sinon pas de lien) [ + .value ]
     },
     send: function(code, obj) {
       if (!!this.conn && this.conn.readyState == 1)
@@ -636,9 +819,6 @@ export default {
       );
       this.curGame = {};
     },
-    setElo(value) {
-      this.newElo = value;
-    },
     setLinkOrShowGame: function(g) {
       if ([g.player1, g.player2].includes(this.st.user.id)) {
         this.curGame = g;
@@ -652,12 +832,14 @@ export default {
       return "View";
     },
     processChat: function(chat) {
-      this.send("newchat", { data: chat });
-      ajax(
-        "/chats",
-        "POST",
-        { data: chat }
-      );
+      if (this.st.user.id > 0) {
+        this.send("newchat", { data: chat });
+        ajax(
+          "/chats",
+          "POST",
+          { data: chat }
+        );
+      }
     },
     clearChat: function() {
       this.chats = [];
@@ -710,8 +892,18 @@ export default {
 button
   display: inline-block
   margin: 0
+
+button#joinBtn, button#confirmBtn
+  display: block
+  margin: 0 auto
+
+button#chatBtn
   display: inline-flex
-  img
+  justify-content: center
+  align-items: center
+  margin-left: 10px
+  & > img
+    margin-left: 5px
     height: 22px
     display: flex
     @media screen and (max-width: 767px)
@@ -719,6 +911,10 @@ button
 
 tr.my-pairing > td
   background-color: orange
+
+.quit > td
+  font-style: italic
+  background-color: lightgrey
 
 .somethingnew
   background-color: #D2B4DE

@@ -11,8 +11,9 @@ module.exports = {
     allowedOrigin: "http://localhost:8080",
   },
 
-  // Lifespan of a (login) cookie
+  // Lifespan of a (login) cookie, and SameSite policy
   cookieExpire: 183*24*60*60*1000, //6 months in milliseconds
+  cookieSameSite: "Strict",
 
   // Characters in a login token, and period of validity (in milliseconds)
   token: {
@@ -31,6 +32,7 @@ module.exports = {
     contact: "some_contact_email",
   },
 
-  // IDs of admin users
-  admin: []
+  // IDs and email of admin users
+  admin: [1],
+  admin_emails: ["some_email_address"]
 };

@@ -10,7 +10,6 @@ const db = require("../utils/database");
  *   cadence: varchar
  *   completed: boolean
  *   nbRounds: integer >= 1
- *   quit, ban: varchar (stringified integer vectors)
  */
 
 const allowedWebsite = [
@@ -21,10 +20,10 @@ const allowedWebsite = [
 const TournamentModel = {
   checkTournament: function(t) {
     return (
-      !!t.id && !!t.id.toString().match(/^[0-9]+$/) &&
+      (!t.id || !!t.id.toString().match(/^[0-9]+$/)) &&
       !!t.dtstart && !!t.dtstart.toString().match(/^[0-9]+$/) &&
       !!t.nbRounds && !!t.nbRounds.toString().match(/^[0-9]+$/) &&
-      !!t.cadence && !!t.cadence.match(/^[\w -]+$/) &&
+      !!t.cadence && !!t.cadence.match(/^[\w+ -]+$/) &&
       allowedWebsite.includes(t.website)
     );
   },
@@ -84,26 +83,14 @@ const TournamentModel = {
     });
   },
 
-  togglePlayer: function(tid, quit, ban) {
+  remove: function(id) {
     db.serialize(function() {
-      let query = "UPDATE Tournaments SET ";
-      if (!!quit) query += "quit = " + quit + ",";
-      if (!!ban) query += "ban = " + ban + ",";
-      query = query.slice(0, -1) + "WHERE id = " + tid;
-      db.run(query);
-    });
-  },
-
-  safeRemove: function(id, uid, admin) {
-    db.serialize(function() {
-      let whereClause = "WHERE id = " + id;
-      if (!admin.includes(uid)) whereClause += " AND uid = " + uid;
       const query =
         "DELETE FROM Tournaments " +
-        whereClause;
+        "WHERE id = " + id;
       db.run(query);
     });
-  },
+  }
 };
 
 module.exports = TournamentModel;

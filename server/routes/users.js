@@ -17,7 +17,8 @@ router.post('/register', access.unlogged, access.ajax, (req,res) => {
       }
       else {
         user.id = ret.id;
-        setAndSendLoginToken("Welcome to " + params.siteURL, user, res);
+        setAndSendLoginToken(
+          "Welcome to " + params.siteURL, user, res, "signup");
         res.json({});
       }
     });
@@ -70,9 +71,10 @@ router.put('/update', access.logged, access.ajax, (req,res) => {
 
 // Toggle active flag:
 router.put('/de_activate', access.logged, access.ajax, (req,res) => {
-  const id = req.body.uid;
-  if (!!id && !!id.match(/^[0-9]+$/)) {
-    UserModel.toggleActive(!!req.body.active);
+  if (!params.admin.includes(req.userId)) return;
+  const uid = req.body.uid;
+  if (!!uid && !!uid.toString().match(/^[0-9]+$/)) {
+    UserModel.toggleActive(uid, !!req.body.active);
     res.json({});
   }
 });
@@ -80,23 +82,39 @@ router.put('/de_activate', access.logged, access.ajax, (req,res) => {
 // Authentication-related methods:
 
 // to: object user (to who we send an email)
-function setAndSendLoginToken(subject, to, res) {
+function setAndSendLoginToken(subject, to, res, signup) {
   // Set login token and send welcome(back) email with auth link
   const token = genToken(params.token.length);
   UserModel.setLoginToken(token, to.id);
-  const body =
-    "Hello " + to.name + " !" + `
+  let body =
+    "Hello " + to.firstName + " " + to.lastName + " !" + `
 ` +
     "Access your account here: " +
     params.siteURL + "/#/authenticate/" + token + `
 ` +
     "Token will expire in " + params.token.expire/(1000*60) + " minutes."
+  if (!!signup) {
+    body += `
+
+` + "NOTE: account activation is not immediate. " +
+      "Please wait a few hours (maximum, generally) " +
+      "before you can join a tournament.";
+    // Notify admins:
+    params.admin_emails.forEach(email => {
+      sendEmail(
+        params.mail.noreply,
+        email,
+        "[tournament] New registration",
+        to.firstName + " " + to.lastName + " just signed up."
+      );
+    });
+  }
   sendEmail(params.mail.noreply, to.email, subject, body);
 }
 
 router.get('/sendtoken', access.unlogged, access.ajax, (req,res) => {
   const email = decodeURIComponent(req.query.email);
-  if (UserModel.checkEmail({ email: email })) {
+  if (UserModel.checkEmail(email)) {
     UserModel.getOne("email", email, (err,user) => {
       access.checkRequest(res, err, user, "Unknown user", () => {
         setAndSendLoginToken("Token for " + params.siteURL, user, res);
@@ -121,6 +139,7 @@ router.get('/authenticate', access.unlogged, access.ajax, (req,res) => {
             httpOnly: true,
             secure: !!params.siteURL.match(/^https/),
             maxAge: params.cookieExpire,
+            //sameSite: params.cookieSameSite
           });
           res.json(user);
         });

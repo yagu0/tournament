@@ -35,7 +35,7 @@ const ExemptModel = {
         "SELECT * " +
         "FROM Exempts " +
         "WHERE tid = " + tid;
-      db.get(query, (err, exempts) => {
+      db.all(query, (err, exempts) => {
         cb(err, exempts || []);
       });
     });

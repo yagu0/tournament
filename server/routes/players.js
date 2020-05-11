@@ -25,7 +25,30 @@ router.get("/players", access.ajax, (req,res) => {
 router.put("/players", access.logged, access.ajax, (req,res) => {
   const obj = req.body.player;
   if (PlayerModel.checkPlayer(obj)) {
-    PlayerModel.safeUpdate(obj, req.userId, params.admin);
+    PlayerModel.modify(obj, req.userId);
+    res.json({});
+  }
+});
+
+// Toggle ban or quit
+router.put("/toggle", access.logged, access.ajax, (req,res) => {
+  const obj = req.body.banQuit;
+  if (
+    PlayerModel.checkBanQuit(obj) &&
+    (
+      params.admin.includes(req.userId) ||
+      (!obj.ban && obj.uid == req.userId)
+    )
+  ) {
+    PlayerModel.toggle(obj);
+    res.json({});
+  }
+});
+
+router.delete("/players", access.logged, access.ajax, (req,res) => {
+  const tid = req.query.tid;
+  if (!!tid && !!tid.toString().match(/^[0-9]+$/)) {
+    PlayerModel.remove(tid, req.userId);
     res.json({});
   }
 });

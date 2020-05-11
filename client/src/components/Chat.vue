@@ -35,6 +35,10 @@ export default {
       };
     },
     sendChat: function() {
+      if (!this.st.user.firstName) {
+        alert("Only registered users can chat");
+        return;
+      }
       let chatInput = document.getElementById("inputChat");
       const chatTxt = chatInput.value.trim();
       chatInput.focus(); //required on smartphones
@@ -42,7 +46,13 @@ export default {
       chatInput.value = "";
       const chat = {
         msg: chatTxt,
-        name: this.st.user.name
+        name: (
+          this.st.user.name ||
+          (
+            this.st.user.firstName + " " +
+            this.st.user.lastName.charAt(0) + "."
+          )
+        )
       };
       this.$emit("mychat", chat);
       this.chats.unshift(chat);

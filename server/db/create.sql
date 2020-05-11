@@ -24,8 +24,6 @@ create table Tournaments (
   bothcol boolean,
   cadence varchar,
   nbRounds integer,
-  quit varchar default '[]',
-  ban varchar default '[]',
   completed boolean default false
 );
 
@@ -43,6 +41,8 @@ create table Players (
   tid integer,
   name varchar,
   elo integer,
+  quit boolean,
+  ban boolean,
   foreign key (uid) references Users(id),
   foreign key (tid) references Tournaments(id) on delete cascade
 );

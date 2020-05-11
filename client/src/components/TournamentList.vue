@@ -15,7 +15,7 @@ div
         td {{ t.title }}
         td {{ t.cadence }}
         td {{ t.nbRounds }}
-        td {{ t.dtstart }}
+        td {{ timestamp2datetime(t.dtstart) }}
   p(v-else)
     | {{ st.tr["No tournaments found :("] }}
 </template>
@@ -43,6 +43,11 @@ export default {
         .map(t => t)
         .sort((t1, t2) => t2.dtstart - t1.dtstart)
       );
+    },
+    timestamp2datetime: function(ts) {
+      return new Date(ts).toLocaleString();
+      // Or next line (also replace regexp "\..*$" by "")
+      //return new Date(ts).toISOString().replace("T"," ");
     }
   }
 };

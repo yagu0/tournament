@@ -10,7 +10,6 @@ router.post("/tournaments", access.logged, access.ajax, (req,res) => {
       res.json(err || ret);
     });
   }
-  else res.json({});
 });
 
 router.get("/tournaments", access.ajax, (req,res) => {
@@ -29,35 +28,25 @@ router.get("/tournaments", access.ajax, (req,res) => {
 });
 
 router.put("/tournaments", access.logged, access.ajax, (req,res) => {
-  if (!!req.body.tid && !!req.body.tid.toString().match(/^[0-9]+$/)) {
-    // Toggle ban or quit
-    const tid = req.body.tid,
-          quit = req.body.quit,
-          ban = req.body.ban;
-    if (
-      params.admin.includes(req.userId) &&
-      TournamentModel.checkQuitBan({ quit: quit, ban: ban })
-    ) {
-      TournamentModel.togglePlayer(tid, quit, ban);
-    }
-  }
-  else {
-    const obj = req.body.tournament;
-    if (
-      params.admin.includes(req.userId) &&
-      TournamentModel.checkTournament(obj)
-    ) {
-      TournamentModel.modify(obj);
-    }
+  const obj = req.body.tournament;
+  if (
+    params.admin.includes(req.userId) &&
+    TournamentModel.checkTournament(obj)
+  ) {
+    TournamentModel.modify(obj);
   }
   res.json({});
 });
 
 router.delete("/tournaments", access.logged, access.ajax, (req,res) => {
   const tid = req.query.id;
-  if (!!tid && !!tid.toString().match(/^[0-9]+$/))
-    TournamentModel.safeRemove(tid, req.userId, params.admin);
-  res.json({});
+  if (
+    !!tid && !!tid.toString().match(/^[0-9]+$/) &&
+    params.admin.includes(req.userId)
+  ) {
+    TournamentModel.remove(tid);
+    res.json({});
+  }
 });
 
 module.exports = router;

@@ -27,11 +27,6 @@ export default {
         success: (res) => {
           this.authOk = true;
           this.st.user = res;
-          if (!res.active) {
-            alert(
-              this.st.tr["Account not activated yet: please wait a few hours"]
-            );
-          }
           localStorage["user"] = JSON.stringify(res);
         }
       }

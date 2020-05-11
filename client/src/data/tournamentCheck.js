@@ -4,13 +4,15 @@ const allowedWebsites = [
 ];
 
 export function checkTournament(t) {
-  if (t.dtstart < Date.now() + 45*60*3600)
-    return "Start time is too soon";
-  if (t.nbRounds <= 0)
+  if (!t.title)
+    return "Missing title";
+  if (!t.dtstart || t.dtstart < Date.now() + 45*60*1000)
+    return "Start time is missing or too soon";
+  if (!t.nbRounds || t.nbRounds <= 0)
     return "Rounds count: positive integer";
-  if (!t.cadence.match(/^[\w -]+$/))
-    return "Wrong cadence";
+  if (!t.cadence.match(/^[\w+ -]+$/))
+    return "Wrong cadence (alphanumerics, space, '+' and '_')";
   if (!allowedWebsites.includes(t.website))
-    return "Unsupported platform";
+    return "Missing or unsupported platform";
   return "";
 }

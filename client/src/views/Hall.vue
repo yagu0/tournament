@@ -7,7 +7,7 @@ main
   )
     .card
       label.modal-close(for="modalNewtour")
-      h3.section New tournament
+      h3.section {{ st.tr["New tournament"] }}
       div(@keyup.enter="onSubmit()")
         fieldset
           label(for="t_dtstart") {{ st.tr["Start time"] }}
@@ -23,11 +23,11 @@ main
           )
         fieldset
           label(for="t_website") {{ st.tr["Platform"] }}
-          select#t_website(v-model="newtour.dtstart")
+          select#t_website(v-model="newtour.website")
             option(value="lichess") lichess.org
             option(value="vchess") vchess.club
         fieldset
-          label(for="t_bothcol") {{ st.tr["Play both colors?"] }}
+          label(for="t_bothcol") {{ st.tr["Two games"] }}
           input#t_bothcol(
             type="checkbox"
             v-model="newtour.bothcol"
@@ -56,11 +56,11 @@ main
           | {{ st.tr["In progress"] }}
         button.tabbtn#nextTournaments(@click="setDisplay('next',$event)")
           | {{ st.tr["Upcoming"] }}
-      button#newTournament(
+      button#newTournamentBtn(
         v-if="isAdmin"
         @click="showNewTournamentModal()"
       )
-        | New tournament
+        | {{ st.tr["New tournament"] }}
       TournamentList(
         v-show="display=='past'"
         :tournaments="pastTournaments"
@@ -85,6 +85,7 @@ main
 import { store } from "@/store";
 import { ajax } from "@/utils/ajax";
 import { checkTournament } from "@/data/tournamentCheck";
+import { processModalClick } from "@/utils/modalClick.js";
 import params from "@/parameters";
 import { getRandString } from "@/utils/alea";
 import TournamentList from "@/components/TournamentList.vue";
@@ -120,6 +121,8 @@ export default {
   },
   mounted: function() {
     this.setDisplay(localStorage.getItem("disp-hall") || "curr");
+    document.getElementById("newtourDiv")
+      .addEventListener("click", processModalClick);
     ajax(
       "/tournaments",
       "GET",
@@ -163,23 +166,35 @@ export default {
       }
     },
     showNewTournamentModal: function() {
-      this.newtour = {};
+      this.newtour = {
+        dtstart: new Date().toISOString().slice(0, -8),
+        title: "Tournament title",
+        website: "lichess",
+        bothcol: false,
+        cadence: "3+2",
+        nbRounds: 7
+      };
       doClick("modalNewtour");
     },
     onSubmit: function() {
-      const error = checkTournament(this.newtour);
-      if (!!error) alert(error);
+      let newTour = JSON.parse(JSON.stringify(this.newtour));
+      newTour.dtstart = Date.parse(newTour.dtstart);
+      const error = checkTournament(newTour);
+      if (!!error) {
+        alert(error);
+        return;
+      }
       else {
         ajax(
           "/tournaments",
           "POST",
           {
-            data: { tournament: this.newtour },
+            data: { tournament: newTour },
             success: (ret) => {
-              let newTour = JSON.parse(JSON.stringify(this.newtour));
               newTour.id = ret.id;
               this.nextTournaments.push(newTour);
               this.newtour = {};
+              document.getElementById("modalNewtour").checked = false;
             }
           }
         );
@@ -209,6 +224,10 @@ export default {
 </script>
 
 <style lang="sass" scoped>
+[type="checkbox"].modal+div .card
+  max-width: 500px
+  max-height: 100%
+
 h4
   font-weight: bold
   text-align: center
@@ -219,7 +238,7 @@ h4
 .tabbtn
   background-color: #f9faee
 
-button#loadMoreBtn
+button#loadMoreBtn, button#newTournamentBtn
   display: block
   margin: 0 auto
 </style>
