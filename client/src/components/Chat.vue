@@ -49,8 +49,8 @@ export default {
         name: (
           this.st.user.name ||
           (
-            this.st.user.firstName + " " +
-            this.st.user.lastName.charAt(0) + "."
+            this.st.user.firstName + "_" +
+            this.st.user.lastName.charAt(0)
           )
         )
       };

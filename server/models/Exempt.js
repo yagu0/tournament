@@ -9,11 +9,8 @@ const db = require("../utils/database");
 
 const ExemptModel = {
   checkExempt: function(e) {
-    return (
-      !!e.tid && !!e.tid.match(/^[0-9]+$/) &&
-      !!e.player && !!e.player.match(/^[0-9]+$/) &&
-      !!e.round && !!e.round.match(/^[0-9]+$/)
-    );
+    return [e.tid, e.round, e.player].every(
+      elt => Number.isInteger(elt) && elt >= 1);
   },
 
   create: function(e, cb) {

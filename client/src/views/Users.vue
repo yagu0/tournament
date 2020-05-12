@@ -82,6 +82,9 @@ export default {
 </script>
 
 <style lang="sass" scoped>
+table
+  max-height: 100%
+
 .inactive > td
   background-color: lightblue
 </style>

@@ -27,22 +27,20 @@ const allowedScores = [
 const GameModel = {
   checkGame: function(g) {
     return (
-      !!g.tid && !!g.tid.match(/^[0-9]+$/) &&
-      !!g.round && !!g.round.match(/^[0-9]+$/) &&
-      !!g.player1 && !!g.player1.match(/^[0-9]+$/) &&
-      !!g.player2 && !!g.player2.match(/^[0-9]+$/) &&
+      [g.tid, g.round, g.player1, g.player2].every(
+        elt => Number.isInteger(elt) && elt >= 1) &&
       (!g.score || allowedScores.includes(g.score))
     );
   },
 
   checkGames: function(gs) {
     return (
-      !!gs.tid && !!gs.tid.match(/^[0-9]+$/) &&
-      !!gs.round && !!gs.round.match(/^[0-9]+$/) &&
+      Number.isInteger(gs.tid) && gs.tid >= 1 &&
+      Number.isInteger(gs.round) && gs.round >= 1 &&
       gs.versus.every(g => {
         return (
-          !!g.player1 && !!g.player1.match(/^[0-9]+$/) &&
-          !!g.player2 && !!g.player2.match(/^[0-9]+$/)
+          Number.isInteger(g.player1) && g.player1 >= 1 &&
+          Number.isInteger(g.player2) && g.player2 >= 1
         );
       })
     );
@@ -79,13 +77,16 @@ const GameModel = {
 
   safeUpdate: function(g, uid, admin) {
     db.serialize(function() {
-      let whereClause = "WHERE tid = " + g.tid;
+      let whereClause =
+        "WHERE tid = " + g.tid +
+        "  AND player1 = " + g.player1 +
+        "  AND round = " + g.round;
       if (!admin.includes(uid))
         whereClause += " AND " + uid + " IN (player1, player2) = " + uid;
       const query =
         "UPDATE Games " +
         // Round + player1/2 won't change
-        "SET score = " + g.score + ", glink = ? " +
+        "SET score = '" + g.score + "', glink = ? " +
         whereClause;
       db.run(query, g.glink);
     });

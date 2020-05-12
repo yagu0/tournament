@@ -35,18 +35,18 @@ main
     .card
       label.modal-close(for="modalJoin")
       fieldset
-        label(for="joinName") {{ st.tr["User name"] }}
+        label(for="joinName") {{ st.tr["Username"] }}
         input#joinName(type="text" v-model="newPlayer.name")
       fieldset
         label(for="joinElo") {{ st.tr["Known rating"] }}
         input#joinElo(type="number" v-model="newPlayer.elo")
         label(for="joinEstimElo") {{ st.tr["Unknown rating:"] }}
         select#joinEstimElo(v-model="newPlayer.elo")
-          option(value="1200") Beginner
-          option(value="1500") Intermediate
-          option(value="1800") Good player
-          option(value="2100") Expert
-          option(value="2400") Master
+          option(value="1200") {{ st.tr["Beginner"] }}
+          option(value="1500") {{ st.tr["Intermediate"] }}
+          option(value="1800") {{ st.tr["Advanced"] }}
+          option(value="2100") {{ st.tr["Expert"] }}
+          option(value="2400") {{ st.tr["Master"] }}
       fieldset
         button(@click="re_joinTournament()") {{ st.tr["Send"] }}
   input#modalGamelink.modal(type="checkbox")
@@ -113,7 +113,7 @@ main
           v-if="showConfirmButton()"
           @click="confirmParticipation()"
         )
-          | {{ Confirm }}
+          | {{ st.tr["Confirm"] }}
         button#joinBtn(
           v-if="showJoinButton()"
           onClick="window.doClick('modalJoin')"
@@ -122,18 +122,18 @@ main
         table
           thead
             tr
-              th Name
-              th User name
-              th Elo
-              th Club
+              th {{ st.tr["Name"] }}
+              th {{ st.tr["Username"] }}
+              th ELO
+              th {{ st.tr["Club"] }}
           tbody
             tr(
               v-for="p in sortedPlayers()"
-              @click="tryActionPlayer(p)"
+              @click="tryActionPlayer(p,'quit')"
               @contextmenu="tryShowDeleteBox($event,p)"
-              :class="{quit: p.quit}"
+              :class="{quit: p.quit, ban: p.ban}"
             )
-              td {{ p.firstName + " " + p.lastName }}
+              td {{ p.lastName.toUpperCase() + " " + p.firstName }}
               td {{ p.name }}
               td {{ p.elo }}
               td {{ p.club }}
@@ -143,13 +143,13 @@ main
             thead
               tr
                 th Pl
-                th Name
-                th User name
-                th Elo
-                th Club
+                th {{ st.tr["Name"] }}
+                th {{ st.tr["Username"] }}
+                th ELO
+                th {{ st.tr["Club"] }}
                 th(v-for="(r,i) in rounds") {{ "R" + i }}
-                th Score
-                th Bc
+                th {{ st.tr["Score"] }}
+                th TB
                 th Perf
             tbody
               tr(v-for="(p,i) in finalGrid.ranking")
@@ -159,19 +159,23 @@ main
                 td {{ p.elo }}
                 td {{ p.club }}
                 td(v-for="j in rounds.length")
-                  a(:href="finalGrid.rounds[p.uid][j].url || '#'")
-                    | {{ finalGrid.rounds[p.uid][j].value }}
+                  a(
+                    v-if="!!finalGrid.rounds[p.uid][j-1].url"
+                    :href="finalGrid.rounds[p.uid][j-1].url"
+                  )
+                    | {{ finalGrid.rounds[p.uid][j-1].value || "" }}
+                  span(v-else) {{ finalGrid.rounds[p.uid][j-1].value || "" }}
                 td {{ scores[p.uid] }}
-                td {{ finalGrid.tieBreak[p.uid] }}
-                td {{ finalGrid.performance[p.uid] }}
+                td {{ Math.round(100*finalGrid.tieBreak[p.uid]) / 100 }}
+                td {{ Math.round(finalGrid.performance[p.uid]) }}
         div(v-else-if="Date.now() > tournament.dtstart")
           table(v-if="rounds.length >= 1")
             thead
               tr
-                th Player1
-                th Player2
-                th Result
-                th View
+                th {{ st.tr["Player"] }} 1
+                th {{ st.tr["Player"] }} 2
+                th {{ st.tr["Result"] }}
+                th 
             tbody
               tr(
                 v-for="g in rounds[rounds.length-1]"
@@ -179,27 +183,34 @@ main
               )
                 td {{ nameAndScore(g.player1) }}
                 td {{ nameAndScore(g.player2) }}
-                td(@click="tryShowModalScore(g)") {{ g.score }}
-                td(@click="setLinkOrShowGame(g)") {{ viewGameBtn(g) }}
+                td(@click="tryShowModalScore(g)") {{ g.score || "*" }}
+                td(@click="setLinkOrShowGame(g)")
+                  button(:disabled="!g.glink && !isMyGame(g)")
+                    | {{ viewGameBtn(g) }}
               tr(v-if="!!exempts[rounds.length-1]")
                 td {{ nameAndScore(exempts[rounds.length-1]) }}
                 td -
-                td E
-                td &nbsp;
-          div(v-if="roundCompleted()")
+                td X
+                td 
+          div(v-if="!tournament.completed && roundCompleted()")
             button(
-              v-if="!tournament.frozen"
+              v-if="rounds.length > 0 && !tournament.frozen"
               @click="freezeResults()"
             )
-              | Freeze results
+              | {{ st.tr["Freeze results"] }}
             button(
               v-else-if="rounds.length < tournament.nbRounds"
               @click="computePairings()"
             )
-              | Next round
+              | {{ st.tr["Next round"] }}
+            button(
+              v-else
+              @click="finishTournament()"
+            )
+              | {{ st.tr["Finish tournament"] }}
         div(v-else)
           p
-            span Time before start:
+            span {{ st.tr["Time before start:"] }} 
             span#countdown
 </template>
 
@@ -317,8 +328,7 @@ export default {
         if (now > this.tournament.dtstart)
           // Tournament running or completed: focus on tournament
           this.display = "tournament";
-        if (this.tournament.completed) this.computeFinalGrid();
-        else {
+        if (!this.tournament.completed) {
           if (now < this.tournament.dtstart) {
             countdown = (this.tournament.dtstart - now) / 1000;
             let remainingTime = document.getElementById("countdown");
@@ -356,6 +366,8 @@ export default {
           window.addEventListener('blur', this.onBlur);
         }
       };
+      let scoresComputed = false;
+      let playersRetrieved = false;
       ajax(
         "/tournaments",
         "GET",
@@ -400,6 +412,9 @@ export default {
                           );
                           if (p.uid == this.st.user.id)
                             this.st.user.name = p.name;
+                          playersRetrieved = true;
+                          if (scoresComputed && this.tournament.completed)
+                            this.computeFinalGrid();
                         });
                       }
                     }
@@ -428,21 +443,17 @@ export default {
                   if (res.games.length == 0) return;
                   // Reorganize games data into rounds array.
                   // Final round may have incomplete result.
+                  const L = Math.max.apply(null, res.games.map(g => g.round));
+                  this.rounds = [...Array(L)].map(r => []);
                   res.games.forEach(g => {
-                    if (this.rounds.length <= g.round) {
-                      Array.prototoype.push.apply(
-                        this.rounds,
-                        [...Array(g.round - this.rounds.length + 1)]
-                      )
-                    }
-                    this.rounds[g.round].push({
+                    this.rounds[g.round - 1].push({
                       player1: g.player1,
                       player2: g.player2,
                       score: g.score,
                       glink: g.glink,
                     });
                   });
-                  this.exempts = [...Array(this.rounds.length).fill(null)];
+                  this.exempts = [...Array(L).fill(null)];
                   ajax(
                     "/exempts",
                     "GET",
@@ -450,9 +461,12 @@ export default {
                       data: { tid: this.$route.params["id"] },
                       success: (res) => {
                         res.exempts.forEach(e => {
-                          this.exempts[e.round] = e.player; //not null
+                          this.exempts[e.round - 1] = e.player; //not null
                         });
                         this.computeScores();
+                        scoresComputed = true;
+                        if (playersRetrieved && this.tournament.completed)
+                          this.computeFinalGrid();
                       }
                     }
                   );
@@ -464,15 +478,23 @@ export default {
       );
     },
     sortedPlayers: function() {
-      return (
+      let allButMe =
         Object.keys(this.players)
+        .filter(uid => uid != this.st.user.id)
         .map(uid => Object.assign({ uid: uid }, this.players[uid]))
         .sort((p1,p2) => {
-          const compL = p2.lastName.localeCompare(p1.lastName);
+          const compL = p1.lastName.localeCompare(p2.lastName);
           if (compL != 0) return compL;
-          return p2.firstName.localeCompare(p1.firstName);
-        })
+          return p1.firstName.localeCompare(p2.firstName);
+        });
+      if (!this.st.user.id || !this.players[this.st.user.id])
+        // I'm not playing
+        return allButMe;
+      const me = Object.assign(
+        { uid: this.st.user.id },
+        this.players[this.st.user.id]
       );
+      return [me].concat(allButMe);
     },
     isMyGame: function(g) {
       return [g.player1, g.player2].includes(this.st.user.id);
@@ -538,11 +560,27 @@ export default {
       );
       this.send(
         "player-create",
-        { data: Object.assign({ uid : this.st.user.id }, newPlayer) }
+        {
+          data:
+            Object.assign(
+              {
+                uid : this.st.user.id,
+                firstName: this.st.user.firstName,
+                lastName: this.st.user.lastName,
+                club: this.st.user.club
+              },
+              newPlayer
+            )
+        }
       );
     },
     nameAndScore: function(uid) {
-      return this.players[uid].name + "[" + this.scores[uid] + "]";
+      return (
+        // At the beginning players might not be initialized
+        !!this.players[uid]
+          ? this.players[uid].name + "[" + this.scores[uid] + "]"
+          : ""
+      );
     },
     confirmParticipation: function() {
       this.$set(this.players, this.st.user.id,
@@ -569,6 +607,7 @@ export default {
       if (this.st.user.id == p.uid && Date.now() < this.tournament.dtstart) {
         e.preventDefault();
         if (confirm(this.st.tr["Withdraw from tournament?"])) {
+          this.$delete(this.players, p.uid);
           ajax(
             "/players",
             "DELETE",
@@ -577,8 +616,15 @@ export default {
           this.send("player-delete", { data: { uid: p.uid } });
         }
       }
+      else if (
+        params.admin.includes(this.st.user.id) &&
+        p.uid != this.st.user.id
+      ) {
+        e.preventDefault();
+        this.tryActionPlayer(p, 'ban');
+      }
     },
-    tryActionPlayer: function(p) {
+    tryActionPlayer: function(p, action) {
       const admin = params.admin.includes(this.st.user.id);
       const targetSelf = (this.st.user.id == p.uid);
       if (this.tournament.completed || (!targetSelf && !admin)) {
@@ -599,25 +645,18 @@ export default {
         }
         else {
           // admin || p.uid == my id, tournament no over
-          let changeBan = false,
-              changeQuit = false;
-          if (p.ban) {
-            if (!admin || !confirm("Unban player?")) return;
-            p.ban = false;
-            changeBan = true;
-          }
-          else if (admin && confirm("Ban player?")) {
-            p.ban = true;
-            changeBan = true;
-          }
-          if (!changeBan) {
+          if (action == "quit") {
             this.$set(this.players, p.uid,
               Object.assign(p, { quit: !p.quit }));
-            changeQuit = true;
+          }
+          else if (action == "ban") {
+            if (!admin || (!p.ban && !confirm("Ban player?"))) return;
+            this.$set(this.players, p.uid,
+              Object.assign(p, { ban: !p.ban }));
           }
           let data = { tid: this.tournament.id, uid: p.uid };
-          if (changeQuit) data.quit = p.quit;
-          if (changeBan) data.ban = p.ban;
+          if (action == "quit") data.quit = p.quit;
+          else if (action == "ban") data.ban = p.ban;
           ajax(
             "/toggle_banquit",
             "PUT",
@@ -643,90 +682,102 @@ export default {
       const L = this.rounds.length;
       return (
         params.admin.includes(this.st.user.id) &&
-        (
-          L == 0 ||
-          this.rounds[L-1].every(g => !!g.score)
-        )
+        (L == 0 || this.rounds[L-1].every(g => !!g.score))
       );
     },
     freezeResults: function() {
-      this.tournament.frozen = true;
-      const over = (this.rounds.length == this.tournament.nbRounds);
+      this.$set(this.tournament, "frozen", true);
       ajax(
         "/toggle_state",
         "PUT",
         {
           data: {
             tid: this.tournament.id,
-            frozen: true,
-            over: over
+            frozen: true
           }
         }
       );
-      this.send("tournament-state", { data: { frozen: true, over: over } });
-      if (over) this.computeFinalGrid();
+      this.send("tournament-state", { data: { frozen: true } });
     },
-    scoreSymbToValues: function(score) {
-      switch (score) {
-        case "1-0": return [1, 0];
-        case "1/2": return [0.5, 0.5];
-        case "0-1": return [0, 1];
-        case "1-F": return [1, 0];
-        case "F-1": return [0, 1];
-        case "F-F": return [0, 0];
-        case "+2": return [2, 0];
-        case "+1": return [1.5, 0.5];
-        case "=": return [1, 1];
-        case "-1": return [0.5, 1.5];
-        case "-2": return [0, 2];
-      }
-      return []; //never reached
+    finishTournament: function() {
+      this.$set(this.tournament, "frozen", false);
+      this.$set(this.tournament, "completed", true);
+      ajax(
+        "/toggle_state",
+        "PUT",
+        {
+          data: {
+            tid: this.tournament.id,
+            frozen: false,
+            over: true
+          }
+        }
+      );
+      this.send("tournament-state", { data: { frozen: false, over: true } });
+      this.computeFinalGrid();
     },
     increment: function(obj, field, by) {
-      if (!obj[field]) obj[field] = by || 1;
-      else obj[field] += by || 1;
+      if (by === undefined) by = 1;
+      if (!obj[field]) obj[field] = by;
+      else obj[field] += by;
     },
     computeScores: function() {
-      // Use current rounds state to get cumulated scores:
-      const L = this.rounds.length;
-      this.scores = {};
-      for (let i=0; i<L; i++) {
-        if (!!this.exempts[i])
-          this.increment(this.scores, this.exempts[i]);
-        else {
-          this.rounds[i].forEach(g => {
-            const scores = this.scoreSymbToValues(g.score);
-            this.increment(this.scores, g.player1, scores[0]);
-            this.increment(this.scores, g.player2, scores[1]);
-          });
+      const scoreSymbToValues = (score) => {
+        switch (score) {
+          case "1-0": return [1, 0];
+          case "1/2": return [0.5, 0.5];
+          case "0-1": return [0, 1];
+          case "1-F": return [1, 0];
+          case "F-1": return [0, 1];
+          case "F-F": return [0, 0];
+          case "+2": return [2, 0];
+          case "+1": return [1.5, 0.5];
+          case "=": return [1, 1];
+          case "-1": return [0.5, 1.5];
+          case "-2": return [0, 2];
         }
+        return []; //never reached
+      };
+      // Use current rounds state to get cumulated scores:
+      let L = this.rounds.length;
+      if (L >= 1 && this.rounds[L-1].some(g => !g.score)) L--;
+      let scores = {};
+      for (let i=0; i<L; i++) {
+        if (!!this.exempts[i]) this.increment(scores, this.exempts[i]);
+        this.rounds[i].forEach(g => {
+          const sc = scoreSymbToValues(g.score);
+          this.increment(scores, g.player1, sc[0]);
+          this.increment(scores, g.player2, sc[1]);
+        });
       }
+      Object.keys(this.players).forEach(uid => {
+        if (!scores[uid]) scores[uid] = 0;
+      });
+      this.scores = scores;
     },
     // rounds[L-1] is supposed completed:
     computePairings: function() {
-      // The results were frozen: un-freeze first
-      ajax(
-        "/toggle_state",
-        "PUT",
-        {
-          data: {
-            tid: this.tournament.id,
-            frozen: false
+      if (this.tournament.frozen) {
+        // The results were frozen: un-freeze first
+        ajax(
+          "/toggle_state",
+          "PUT",
+          {
+            data: {
+              tid: this.tournament.id,
+              frozen: false
+            }
           }
-        }
-      );
-      this.send("tournament-state", { data: { frozen: false } });
+        );
+        this.send("tournament-state", { data: { frozen: false } });
+      }
+      const L = this.rounds.length;
       this.computeScores();
       let activePlayers =
         Object.keys(this.players).filter(k => {
-          return (
-            this.players[k].active &&
-            !this.players[k].quit &&
-            !this.players[k].ban
-          );
+          return (!this.players[k].quit && !this.players[k].ban);
         });
       let n = activePlayers.length;
-      const L = this.rounds.length;
       let state = {};
       activePlayers.forEach(k => {
         state[k] = {
@@ -741,7 +792,6 @@ export default {
           state[this.exempts[i]].exempt++;
         else {
           this.rounds[i].forEach(g => {
-            const scores = this.scoreSymbToValues(g.score);
             this.increment(state[g.player1].met, g.player2);
             this.increment(state[g.player2].met, g.player1);
             state[g.player1].colors['W']++;
@@ -754,15 +804,15 @@ export default {
         // Determine a player out for this round
         let exempt = -1;
         let minScore = Infinity;
-        activePlayers.forEach(p => {
+        activePlayers.forEach(k => {
           const scoreE =
-            state[p.uid].exempt +
+            state[k].exempt +
             // Divide by 2(4) * L to work with bothcol == true or not
-            this.scores[p.uid] / (2 * L) +
-            (1 - 1 / this.players[p.uid].elo) / (4 * L);
+            this.scores[k] / (2 * (L + 1)) +
+            (1 - 1 / this.players[k].elo) / (4 * (L + 1));
           if (scoreE < minScore) {
             minScore = scoreE;
-            exempt = p.uid;
+            exempt = k;
           }
         });
         pairing.exempt = exempt;
@@ -805,9 +855,11 @@ export default {
             pair.reverse();
           }
           pairing.round.push({
-            player1: pair[0],
-            player2: pair[1]
+            player1: parseInt(pair[0]),
+            player2: parseInt(pair[1])
           });
+          alreadyPaired[pI] = true;
+          alreadyPaired[pJ] = true;
         }
       }
       this.rounds.push(pairing.round);
@@ -820,7 +872,7 @@ export default {
           data: {
             games: {
               tid: this.tournament.id,
-              round: L,
+              round: L + 1,
               versus: pairing.round
             }
           }
@@ -834,8 +886,8 @@ export default {
             data: {
               exempt: {
                 tid: this.tournament.id,
-                round: L,
-                player: pairing.exempt
+                round: L + 1,
+                player: parseInt(pairing.exempt)
               }
             }
           }
@@ -864,7 +916,7 @@ export default {
       const n = Object.keys(this.players).length;
       const L = this.rounds.length;
       let met = {};
-      this.players.forEach(p => met[p.uid] = {});
+      Object.keys(this.players).forEach(uid => met[uid] = {});
       for (let i=0; i<L; i++) {
         this.rounds[i].forEach(g => {
           this.increment(met[g.player1], g.player2);
@@ -878,39 +930,39 @@ export default {
       const minP = 1 / (multFact * 10 * this.tournament.nbRounds);
       // Compute perf:
       let success = {};
-      this.players.forEach(p => {
-        const pMet = Object.keys(met[p.uid]);
-        if (pMet.length == 0) performance[p.uid] = "?";
+      Object.keys(this.players).forEach(uid => {
+        const pMet = Object.keys(met[uid]);
+        if (pMet.length == 0) performance[uid] = 0;
         else {
           // Met at least one oppponent:
           let perf = 0;
           let totGames = 0;
           pMet.forEach(m => {
-            perf += met[p.uid][m] * this.players[m].elo;
-            totGames += met[p.uid][m];
+            perf += met[uid][m] * this.players[m].elo;
+            totGames += met[uid][m];
           });
           perf /= totGames;
           const adjustedScore =
-            this.scores[p.uid] - this.exempts.filter(e => e == p.uid).length;
-          success[p.uid] = adjustedScore / (multFact * totGames);
-          if (success[p.uid] == 0) success[p.uid] = minP;
-          else if (success[p.uid] == 1) success[p.uid] = 1 - minP;
-          const delta = -400 * Math.log10(1 / success[p.uid] - 1);
-          performance[p.uid] = perf + delta;
+            this.scores[uid] - this.exempts.filter(e => e == uid).length;
+          success[uid] = adjustedScore / (multFact * totGames);
+          if (success[uid] == 0) success[uid] = minP;
+          else if (success[uid] == 1) success[uid] = 1 - minP;
+          const delta = -400 * Math.log10(1 / success[uid] - 1);
+          performance[uid] = perf + delta;
         }
       });
       // Compute tie break:
-      this.players.forEach(p => {
-        const pMet = Object.keys(met[p.uid]);
-        if (pMet.length == 0) tieBreak[p.uid] = "?";
+      Object.keys(this.players).forEach(uid => {
+        const pMet = Object.keys(met[uid]);
+        if (pMet.length == 0) tieBreak[uid] = 0;
         else {
           let tb = 0;
           let totGames = 0;
           pMet.forEach(m => {
-            tb += met[p.uid][m] * success[m];
-            totGames += met[p.uid][m];
+            tb += met[uid][m] * success[m];
+            totGames += met[uid][m];
           });
-          tieBreak[p.uid] = tb / totGames;
+          tieBreak[uid] = tb / totGames;
         }
       });
       // Now rank players and fill variables
@@ -934,7 +986,7 @@ export default {
       let rounds = {};
       pids.forEach(uid => {
         rounds[uid] = [...Array(L)];
-        for (i=0; i<L; i++) rounds[uid][i] = { url: "", value: "" };
+        for (let i=0; i<L; i++) rounds[uid][i] = { url: "", value: "" };
       });
       for (let i=0; i<n; i++) rounds
       let rank = {};
@@ -951,6 +1003,11 @@ export default {
         });
         if (!!this.exempts[i]) rounds[this.exempts[i]][i].value = "E";
       }
+      // Fill rounds with empty values for unplayed games:
+      Object.keys(this.players).forEach(uid => {
+        for (let i=0; i<L; i++)
+          if (!rounds[uid][i]) rounds[uid][i] = {};
+      });
       this.finalGrid = {
         ranking: ranking,
         performance: performance,
@@ -971,15 +1028,19 @@ export default {
         document.getElementById("chatBtn").classList.remove("somethingnew");
     },
     tryShowModalScore: function(g) {
-      if ([g.player1, g.player2].includes(this.st.user.id)) {
+      if (
+        params.admin.includes(this.st.user.id) ||
+        [g.player1, g.player2].includes(this.st.user.id)
+      ) {
         this.curGame = g;
         doClick("modalScore");
       }
     },
     setScore: function(e) {
+      if (this.tournament.completed) return;
       document.getElementById("modalScore").checked = false;
-      if (this.tournament.frozen) {
-        alert(this.st.tr["Please tell the result in chat"]);
+      if (!params.admin.includes(this.st.user.id) && this.tournament.frozen) {
+        alert(this.st.tr["Give the result in chat"]);
         return;
       }
       const score = e.target.innerHTML;
@@ -987,7 +1048,18 @@ export default {
       ajax(
         "/games",
         "PUT",
-        { data: { game: this.curGame } }
+        {
+          data: {
+            game:
+              Object.assign(
+                {
+                  tid: this.tournament.id,
+                  round: this.rounds.length
+                },
+                this.curGame
+              )
+          }
+        }
       );
       this.send(
         "game-update",
@@ -996,12 +1068,23 @@ export default {
       this.curGame = {};
     },
     // TODO: game links could be modified even after the tournament ends
-    setGameLink: function() {
+    setGamelink: function() {
       document.getElementById("modalGamelink").checked = false;
       ajax(
         "/games",
         "PUT",
-        { data: { game: this.curGame } }
+        {
+          data: {
+            game:
+              Object.assign(
+                {
+                  tid: this.tournament.id,
+                  round: this.rounds.length
+                },
+                this.curGame
+              )
+          }
+        }
       );
       this.send(
         "game-update",
@@ -1014,7 +1097,7 @@ export default {
         this.curGame = g;
         doClick("modalGamelink");
       }
-      else this.$router.push(g.glink);
+      else if (!!g.glink) window.open(g.glink, "_blank");
     },
     viewGameBtn: function(g) {
       if ([g.player1, g.player2].includes(this.st.user.id))
@@ -1045,8 +1128,13 @@ export default {
           let player = data.data;
           const uid = player.uid;
           delete player["uid"];
-          this.$set(this.players, uid,
-            Object.assign(this.players[uid], player));
+          if (data.code == "player-create")
+            this.$set(this.players, uid, player);
+          else if (data.code == "player-update") {
+            this.$set(this.players, uid,
+              Object.assign(this.players[uid], player));
+          }
+          else this.$delete(this.players, uid);
           break;
         }
         case "pairing": {
@@ -1055,12 +1143,17 @@ export default {
           this.rounds.push(pairing.round);
           this.exempts.push(pairing.exempt);
           this.computeScores();
-          new Audio("../assets/newpairing.flac").play().catch(() => {});
-          if (!this.focus) {
-            notify(
-              "New round starting",
-              { body: "Pairings for round " + this.rounds.length }
-            );
+          if (
+            this.st.user.id > 0 &&
+            Object.keys(this.players).includes(this.st.user.id.toString())
+          ) {
+            new Audio("../assets/newpairing.flac").play().catch(() => {});
+            if (!this.focus) {
+              notify(
+                "New round starting",
+                { body: "Pairings for round " + (this.rounds.length + 1) }
+              );
+            }
           }
           break;
         }
@@ -1098,6 +1191,9 @@ export default {
 #aboveTour
   text-align: center
 
+table
+  max-height: 100%
+
 button
   display: inline-block
   margin: 0
@@ -1124,6 +1220,10 @@ tr.my-pairing > td
 .quit > td
   font-style: italic
   background-color: lightgrey
+
+.ban > td
+  font-style: italic
+  background-color: grey
 
 .somethingnew
   background-color: #D2B4DE

@@ -72,7 +72,7 @@ const TournamentModel = {
   modify: function(t) {
     db.serialize(function() {
       const query =
-        "UPDATE Tournament " +
+        "UPDATE Tournaments " +
         "SET dtstart = " + t.dtstart +
         ", title = '" + t.title + "'" +
         ", website = '" + t.website + "'" +
@@ -91,7 +91,7 @@ const TournamentModel = {
         (!!o.over ? "completed = 1," : "");
       newValues = newValues.slice(0, -1);
       const query =
-        "UPDATE Tournament " +
+        "UPDATE Tournaments " +
         "SET " + newValues + " " +
         "WHERE id = " + tid;
       db.run(query);
