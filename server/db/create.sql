@@ -12,7 +12,7 @@ create table Users (
   sessionToken varchar,
   notify boolean,
   created datetime,
-  active boolean default false
+  active boolean
 );
 
 create table Tournaments (
@@ -24,7 +24,8 @@ create table Tournaments (
   bothcol boolean,
   cadence varchar,
   nbRounds integer,
-  completed boolean default false
+  frozen boolean,
+  completed boolean
 );
 
 create table Chats (

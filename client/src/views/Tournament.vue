@@ -58,7 +58,7 @@ main
       label.modal-close(for="modalGamelink")
       fieldset
         label(for="gamelink") {{ st.tr["Game link"] }}
-        input#gamelink(type="text" v-model="curGame.gameLink")
+        input#gamelink(type="text" v-model="curGame.glink")
         button(@click="setGamelink()") {{ st.tr["Send"] }}
   input#modalScore.modal(type="checkbox")
   div#scoreWrap(
@@ -130,7 +130,7 @@ main
             tr(
               v-for="p in sortedPlayers()"
               @click="tryActionPlayer(p)"
-              @contextmenu="tryShowDeleteBox(p)"
+              @contextmenu="tryShowDeleteBox($event,p)"
               :class="{quit: p.quit}"
             )
               td {{ p.firstName + " " + p.lastName }}
@@ -138,7 +138,7 @@ main
               td {{ p.elo }}
               td {{ p.club }}
       div(v-show="display=='tournament'")
-        div(v-if="!!tournament.completed")
+        div(v-if="tournament.completed")
           table(v-if="!!finalGrid")
             thead
               tr
@@ -186,11 +186,17 @@ main
                 td -
                 td E
                 td &nbsp;
-          button(
-            v-show="showPairingBtn()"
-            @click="computePairings()"
-          )
-            | Next round
+          div(v-if="roundCompleted()")
+            button(
+              v-if="!tournament.frozen"
+              @click="freezeResults()"
+            )
+              | Freeze results
+            button(
+              v-else-if="rounds.length < tournament.nbRounds"
+              @click="computePairings()"
+            )
+              | Next round
         div(v-else)
           p
             span Time before start:
@@ -204,6 +210,7 @@ import { ajax } from "@/utils/ajax";
 import { getRandString } from "@/utils/alea";
 import { ppt } from "@/utils/datetime";
 import { ArrayFun } from "@/utils/array";
+import { maxWeightMatching } from "@/utils/mwmatching3";
 import { checkPlayer } from "@/data/playerCheck";
 import { store } from "@/store";
 import { processModalClick } from "@/utils/modalClick.js";
@@ -222,9 +229,10 @@ export default {
       chats: [],
       display: "players",
       rounds: [],
-      scores: {}, //current results
+      scores: {}, //current cumulated results
       exempts: [],
       finalGrid: null,
+      focus: !document.hidden, //will not always work... TODO
       newPlayer: {},
       timer: null,
       socketCloseListener: null,
@@ -283,10 +291,21 @@ export default {
       if (!!this.timer) clearInterval(this.timer);
       if (!!this.conn) {
         clearInterval(this.socketCloseListener);
+        document.removeEventListener('visibilitychange', this.visibilityChange);
+        window.removeEventListener('focus', this.onFocus);
+        window.removeEventListener('blur', this.onBlur);
         this.conn.removeEventListener("message", this.socketMessageListener);
-        this.send("disconnect");
         this.conn = null;
       }
+    },
+    visibilityChange: function() {
+      this.focus = (document.visibilityState == "visible");
+    },
+    onFocus: function() {
+      this.focus = true;
+    },
+    onBlur: function() {
+      this.focus = false;
     },
     atCreation: function() {
       // (Re)Set variables
@@ -295,43 +314,46 @@ export default {
       this.chats = [];
       const setSocketVars = () => {
         const now = Date.now();
-        if (now > this.tournament.dtstart) {
-          // Tournament running or completed
+        if (now > this.tournament.dtstart)
+          // Tournament running or completed: focus on tournament
           this.display = "tournament";
-          if (this.tournament.completed) this.computeFinalGrid();
-          else {
-            // Initialize connection
-            const sid = getRandString();
-            this.connexionString = params.socketUrl + "/?sid=" + sid;
-            this.conn = new WebSocket(this.connexionString);
-            this.conn.addEventListener("message", this.socketMessageListener);
-            this.socketCloseListener = setInterval(
+        if (this.tournament.completed) this.computeFinalGrid();
+        else {
+          if (now < this.tournament.dtstart) {
+            countdown = (this.tournament.dtstart - now) / 1000;
+            let remainingTime = document.getElementById("countdown");
+            remainingTime.innerHTML = ppt(countdown);
+            this.timer = setInterval(
               () => {
-                if (this.conn.readyState == 3) {
-                  this.conn.removeEventListener(
-                    "message",
-                    this.socketMessageListener);
-                  this.conn = new WebSocket(this.connexionString);
-                  this.conn.addEventListener(
-                    "message",
-                    this.socketMessageListener);
-                }
+                if (--countdown <= 0) clearInterval(this.timer);
+                else remainingTime.innerHTML = ppt(countdown);
               },
               1000
             );
           }
-        }
-        else {
-          countdown = this.tournament.dtstart - now;
-          let remainingTime = document.getElementById("countdown");
-          remainingTime.innerHTML = ppt(countdown);
-          this.timer = setInterval(
+          // Initialize connection + focus listeners
+          const sid = getRandString();
+          this.connexionString =
+            params.socketUrl + "/?sid=" + sid + "&page=" + this.tournament.id;
+          this.conn = new WebSocket(this.connexionString);
+          this.conn.addEventListener("message", this.socketMessageListener);
+          this.socketCloseListener = setInterval(
             () => {
-              if (--countdown <= 0) clearInterval(this.timer);
-              else remainingTime.innerHTML = ppt(countdown);
+              if (this.conn.readyState == 3) {
+                this.conn.removeEventListener(
+                  "message",
+                  this.socketMessageListener);
+                this.conn = new WebSocket(this.connexionString);
+                this.conn.addEventListener(
+                  "message",
+                  this.socketMessageListener);
+              }
             },
             1000
           );
+          document.addEventListener('visibilitychange', this.visibilityChange);
+          window.addEventListener('focus', this.onFocus);
+          window.addEventListener('blur', this.onBlur);
         }
       };
       ajax(
@@ -417,7 +439,7 @@ export default {
                       player1: g.player1,
                       player2: g.player2,
                       score: g.score,
-                      gameLink: g.gameLink,
+                      glink: g.glink,
                     });
                   });
                   this.exempts = [...Array(this.rounds.length).fill(null)];
@@ -430,6 +452,7 @@ export default {
                         res.exempts.forEach(e => {
                           this.exempts[e.round] = e.player; //not null
                         });
+                        this.computeScores();
                       }
                     }
                   );
@@ -477,6 +500,10 @@ export default {
             }
           }
         );
+        this.send(
+          "player-update",
+          { data: Object.assign({ uid : this.st.user.id }, this.newPlayer) }
+        );
         return;
       }
       const earlyRegistration =
@@ -509,38 +536,45 @@ export default {
           }
         }
       );
+      this.send(
+        "player-create",
+        { data: Object.assign({ uid : this.st.user.id }, newPlayer) }
+      );
     },
     nameAndScore: function(uid) {
       return this.players[uid].name + "[" + this.scores[uid] + "]";
     },
     confirmParticipation: function() {
-      this.players[this.st.user.id].quit = false;
-      const quitIdx =
-        this.tournament.quit.findIndex(q => q == this.st.user.id);
-      this.tournament.quit.splice(quitIdx, 1);
+      this.$set(this.players, this.st.user.id,
+        Object.assign(this.players[this.st.user.id], { quit: false }));
       ajax(
-        "/tournaments",
+        "/toggle_banquit",
         "PUT",
         {
           data: {
-            uid: this.st.user.id,
-            tid: this.tournament.id,
-            quit: JSON.stringify(this.tournament.quit)
+            banQuit: {
+              uid: this.st.user.id,
+              tid: this.tournament.id,
+              quit: false
+            }
           }
         }
       );
+      this.send(
+        "player-update",
+        { data: { uid : this.st.user.id, quit: false } }
+      );
     },
     tryShowDeleteBox: function(e, p) {
-      if (this.st.user.id == p.uid) {
+      if (this.st.user.id == p.uid && Date.now() < this.tournament.dtstart) {
         e.preventDefault();
         if (confirm(this.st.tr["Withdraw from tournament?"])) {
           ajax(
             "/players",
             "DELETE",
-            {
-              data: { tid: this.tournament.id }
-            }
+            { data: { tid: this.tournament.id } }
           );
+          this.send("player-delete", { data: { uid: p.uid } });
         }
       }
     },
@@ -585,9 +619,13 @@ export default {
           if (changeQuit) data.quit = p.quit;
           if (changeBan) data.ban = p.ban;
           ajax(
-            "/toggle",
+            "/toggle_banquit",
             "PUT",
             { data: { banQuit: data } }
+          );
+          this.send(
+            "player-update",
+            { data: { uid: data.uid, ban: data.ban, quit: data.quit } }
           );
         }
       }
@@ -601,7 +639,7 @@ export default {
           return "#";
       }
     },
-    showPairingBtn: function() {
+    roundCompleted: function() {
       const L = this.rounds.length;
       return (
         params.admin.includes(this.st.user.id) &&
@@ -610,6 +648,22 @@ export default {
           this.rounds[L-1].every(g => !!g.score)
         )
       );
+    },
+    freezeResults: function() {
+      this.tournament.frozen = true;
+      const over = (this.rounds.length == this.tournament.nbRounds);
+      ajax(
+        "/toggle_state",
+        "PUT",
+        {
+          data: {
+            tid: this.tournament.id,
+            frozen: true,
+            over: over
+          }
+        }
+      );
+      this.send("tournament-state", { data: { frozen: true, over: over } });
     },
     scoreSymbToValues: function(score) {
       switch (score) {
@@ -627,36 +681,66 @@ export default {
       }
       return []; //never reached
     },
-    increment: function(obj, field) {
-      if (!obj[field]) obj[field] = 1;
-      else obj[field]++;
+    increment: function(obj, field, by) {
+      if (!obj[field]) obj[field] = by || 1;
+      else obj[field] += by || 1;
+    },
+    computeScores: function() {
+      // Use current rounds state to get cumulated scores:
+      const L = this.rounds.length;
+      this.scores = {};
+      for (let i=0; i<L; i++) {
+        if (!!this.exempts[i])
+          this.increment(this.scores, this.exempts[i]);
+        else {
+          this.rounds[i].forEach(g => {
+            const scores = this.scoreSymbToValues(g.score);
+            this.increment(this.scores, g.player1, scores[0]);
+            this.increment(this.scores, g.player2, scores[1]);
+          });
+        }
+      }
     },
     // rounds[L-1] is supposed completed:
     computePairings: function() {
+      // The results were frozen: un-freeze first
+      ajax(
+        "/toggle_state",
+        "PUT",
+        {
+          data: {
+            tid: this.tournament.id,
+            frozen: false
+          }
+        }
+      );
+      this.send("tournament-state", { data: { frozen: false } });
+      this.computeScores();
       let activePlayers =
-        Object.keys(this.players).filter(k => this.players[k].active);
+        Object.keys(this.players).filter(k => {
+          return (
+            this.players[k].active &&
+            !this.players[k].quit &&
+            !this.players[k].ban
+          );
+        });
       let n = activePlayers.length;
       const L = this.rounds.length;
       let state = {};
       activePlayers.forEach(k => {
         state[k] = {
           met: {},
-          score: 0,
           // NOTE: colors are used only if !tournament.bothcol
           colors: { W: 0, B: 0 },
           exempt: 0
         };
       });
       for (let i=0; i<L; i++) {
-        if (!!this.exempts[i]) {
+        if (!!this.exempts[i])
           state[this.exempts[i]].exempt++;
-          state[this.exempts[i]].score++;
-        }
         else {
           this.rounds[i].forEach(g => {
             const scores = this.scoreSymbToValues(g.score);
-            state[g.player1].score += scores[0];
-            state[g.player2].score += scores[1];
             this.increment(state[g.player1].met, g.player2);
             this.increment(state[g.player2].met, g.player1);
             state[g.player1].colors['W']++;
@@ -673,7 +757,7 @@ export default {
           const scoreE =
             state[p.uid].exempt +
             // Divide by 2(4) * L to work with bothcol == true or not
-            state[p.uid].score / (2 * L) +
+            this.scores[p.uid] / (2 * L) +
             (1 - 1 / this.players[p.uid].elo) / (4 * L);
           if (scoreE < minScore) {
             minScore = scoreE;
@@ -688,10 +772,10 @@ export default {
       // Compute distances (half) matrix for core pairing algorithm
       let edges = [];
       for (let i=0; i < n - 1; i++) {
-        const scoreI = state[activePlayers[i]].score;
+        const scoreI = this.scores[activePlayers[i]];
         const eloI = this.players[activePlayers[i]].elo;
         for (let j=i+1; j < n; j++) {
-          const scoreJ = state[activePlayers[j]].score;
+          const scoreJ = this.scores[activePlayers[j]];
           const eloJ = this.players[activePlayers[j]].elo;
           const distIJ =
             // 500: arbitrary value (should be greater than number of rounds)
@@ -701,70 +785,62 @@ export default {
           edges.push([i, j, -distIJ]);
         }
       }
-      const assignment = mwmatching3(edges, maxcardinality=true);
-
-      // TODO: translate final part (adapt?)
-//      assignment <- findPairing(distances)
-//      assignment <- activePlayers[assignment]
-//      pairing <- ""
-//      alreadyPaired <- rep(F, n)
-//      colors <- rep('B', n)
-//      for (i in seq_along(assignment)) {
-//        if (!alreadyPaired[activePlayers[i]]) {
-//          # Color assignment: the player who had black the most takes white.
-//          # In case of equality: random choice.
-//          ordering <- c(activePlayers[i], assignment[i])
-//          if (
-//            state[[activePlayers[i]]]$colors[["N"]] <
-//            state[[assignment[i]]]$colors[["N"]]
-//          ) {
-//            ordering <- c(assignment[i], activePlayers[i])
-//          }
-//          else if (
-//            state[[activePlayers[i]]]$colors[["N"]] ==
-//            state[[assignment[i]]]$colors[["N"]]
-//          ) {
-//            if (sample(2, 1) == 2) ordering <- c(assignment[i], activePlayers[i])
-//          }
-//          alreadyPaired[ordering[1]] <- T
-//          alreadyPaired[ordering[2]] <- T
-//          pairing <- paste0(
-//            pairing,
-//            tournament[ordering[1],"id"],
-//            "[",
-//            state[[ordering[1]]]$score,
-//            "]",
-//            " vs. ",
-//            tournament[ordering[2],"id"],
-//            "[",
-//            state[[ordering[2]]]$score,
-//            "]",
-//            "\n"
-//          )
-//          if (ordering[1] == activePlayers[i]) colors[assignment[i]] <- 'N'
-//          else colors[activePlayers[i]] <- 'N'
-//        }
-//      }
-//      if (exempt >= 1) {
-//        pairing <- paste0(
-//          pairing,
-//          tournament[exempt,"id"],
-//          "[",
-//          state[[exempt]]$score,
-//          "] exempt\n"
-//        )
-//      }
-//      # Print pairings
-//      cat(pairing)
-//      # Also output the permutation in a human+machine readable way
-//      if (exempt >= 1) {
-//        activePlayers <- c(activePlayers, exempt)
-//        assignment <- c(assignment, exempt)
-//      }
-//      list(cbind(activePlayers, assignment), colors[activePlayers])
-
+      const assignment = maxWeightMatching(edges, true);
+      let alreadyPaired = {};
+      let colors = {};
+      for (let i=0; i<n; i++) {
+        const pI = activePlayers[i];
+        if (!alreadyPaired[pI]) {
+          // Color assignment: the player who had black the most takes white
+          const pJ = activePlayers[assignment[i]];
+          let pair = [pI, pJ];
+          if (
+            state[pJ].colors['N'] > state[pI].colors['N'] ||
+            (
+              state[pJ].colors['N'] == state[pI].colors['N'] &&
+              Math.random() < 0.5
+            )
+          ) {
+            pair.reverse();
+          }
+          pairing.round.push({
+            player1: pair[0],
+            player2: pair[1]
+          });
+        }
+      }
       this.rounds.push(pairing.round);
       this.exempts.push(pairing.exempt || null);
+      // Communicate pairings, to the server and to peers
+      ajax(
+        "/games",
+        "POST",
+        {
+          data: {
+            games: {
+              tid: this.tournament.id,
+              round: L,
+              versus: pairing.round
+            }
+          }
+        }
+      );
+      if (!!pairing.exempt) {
+        ajax(
+          "/exempts",
+          "POST",
+          {
+            data: {
+              exempt: {
+                tid: this.tournament.id,
+                round: L,
+                player: pairing.exempt
+              }
+            }
+          }
+        );
+      }
+      this.send("pairing", { data: pairing });
     },
     // TODO:
     computeFinalGrid: function() {
@@ -802,6 +878,11 @@ export default {
       }
     },
     setScore: function(e) {
+      document.getElementById("modalScore").checked = false;
+      if (this.tournament.frozen) {
+        alert(this.st.tr["Please tell the result in chat"]);
+        return;
+      }
       const score = e.target.innerHTML;
       this.curGame.score = score;
       ajax(
@@ -809,13 +890,22 @@ export default {
         "PUT",
         { data: { game: this.curGame } }
       );
+      this.send(
+        "game-update",
+        { data: { player1: this.curGame.player1, score: score } }
+      );
       this.curGame = {};
     },
     setGameLink: function() {
+      document.getElementById("modalGamelink").checked = false;
       ajax(
         "/games",
         "PUT",
         { data: { game: this.curGame } }
+      );
+      this.send(
+        "game-update",
+        { data: { player1: this.curGame.player1, glink: this.curGame.glink } }
       );
       this.curGame = {};
     },
@@ -824,7 +914,7 @@ export default {
         this.curGame = g;
         doClick("modalGamelink");
       }
-      else this.$router.push(g.gameLink);
+      else this.$router.push(g.glink);
     },
     viewGameBtn: function(g) {
       if ([g.player1, g.player2].includes(this.st.user.id))
@@ -849,34 +939,53 @@ export default {
       if (!this.conn) return;
       const data = JSON.parse(msg.data);
       switch (data.code) {
-        // TODO: several other messages, like "join/quit/ban" ...
+        case "player-create":
+        case "player-update":
+        case "player-delete": {
+          let player = data.data;
+          const uid = player.uid;
+          delete player["uid"];
+          this.$set(this.players, uid,
+            Object.assign(this.players[uid], player));
+          break;
+        }
         case "pairing": {
-          // A pairing is an array of [player1, player2]
+          // A pairing is an array of [player1, player2] + potential exempt
           const pairing = data.data;
-          this.rounds.push(
-            pairing.map(p => {
-              return {
-                player1: p[0],
-                player2: p[1],
-                score: "",
-                gameLink: ""
-              };
-            })
-          );
+          this.rounds.push(pairing.round);
+          this.exempts.push(pairing.exempt);
+          this.computeScores();
+          new Audio("../assets/newpairing.flac").play().catch(() => {});
+          if (!this.focus) {
+            notify(
+              "New round starting",
+              { body: "Pairings for round " + this.rounds.length }
+            );
+          }
           break;
         }
-        case "result": {
-          const game = data.data;
-          const rIdx =
-            this.rounds[game.round].findIndex(g => g.player1 == game.player1);
-          this.rounds[game.round][rIdx].score = game.score;
+        case "game-update":
+          if (!this.tournament.frozen) {
+            let game = data.data;
+            const L = this.rounds.length;
+            const rIdx =
+              this.rounds[L-1].findIndex(g => g.player1 == game.player1);
+            delete game["player1"];
+            this.$set(this.rounds[L-1], rIdx,
+              Object.assign(this.rounds[L-1][rIdx], game));
+          }
           break;
-        }
         case "newchat": {
           let chat = data.data;
           this.$refs["chatcomp"].newChat(chat);
           if (!document.getElementById("modalChat").checked)
             document.getElementById("chatBtn").classList.add("somethingnew");
+          break;
+        }
+        case "tournament-state": {
+          const newState = data.data;
+          this.$set(this.tournament, "frozen", !!newState.frozen);
+          this.$set(this.tournament, "completed", !!newState.over);
           break;
         }
       }

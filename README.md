@@ -6,7 +6,7 @@ Draughts or anything like that.
 Pairing algorithm is based on the weighted maximum matching code
 [found here](https://github.com/mlbright/Assignment-Problem/blob/master/mwmatching.py).
 
-Names in tournament\_sample.csv were generated with
+Names in server/db/sampleDb.sql were generated with
 [fakenamegenerator.com](https://fr.fakenamegenerator.com/gen-random-fr-us.php).
 
 ## Get involved

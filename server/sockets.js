@@ -26,10 +26,12 @@ module.exports = function(wss) {
   wss.on("connection", (socket, req) => {
     const query = getJsonFromUrl(req.url);
     const sid = query["sid"];
+    const page = query["page"]; //tournament ID
     const notifyRoom = (code, obj={}) => {
-      Object.keys(clients).forEach(k => {
+      if (!clients[page]) return;
+      Object.keys(clients[page]).forEach(k => {
         if (k == sid) return;
-        send(clients[k], Object.assign({ code: code }, obj));
+        send(clients[page][k], Object.assign({ code: code }, obj));
       });
     };
     const messageListener = (objtxt) => {
@@ -38,10 +40,12 @@ module.exports = function(wss) {
       notifyRoom(obj.code, { data: obj.data });
     };
     const closeListener = () => {
-      delete clients[sid];
+      delete clients[page][sid];
+      if (Object.keys(clients[page]).length == 0) delete clients[page];
     };
-    // TODO: if clients[sid] already exists, show "tab now offline" message
-    clients[sid] = socket;
+    if (!clients[page]) clients[page] = {};
+    // Since a new SID is generated each time, clients[sid] does not exist yet:
+    clients[page][sid] = socket;
     socket.on("message", messageListener);
     socket.on("close", closeListener);
   });

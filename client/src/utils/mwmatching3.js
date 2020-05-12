@@ -1,4 +1,10 @@
-export function maxWeightMatching(edges, maxcardinality=false) {
+/***************************
+ * From: http://www.xs4all.nl/~rjoris/maximummatching.html
+ * File found here https://github.com/mlbright/Assignment-Problem/blob/master/mwmatching.py
+ * Commented out unit tests and moved globals into main function.
+***************************/
+
+export function maxWeightMatching(edges, maxcardinality) {
   if (!edges) return [];
   const nedge = edges.length;
   let nvertex = 0;

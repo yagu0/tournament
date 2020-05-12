@@ -38,6 +38,18 @@ router.put("/tournaments", access.logged, access.ajax, (req,res) => {
   res.json({});
 });
 
+router.put("/toggle_state", access.logged, access.ajax, (req,res) => {
+  const tid = req.body.tid;
+  if (
+    !!tid && !!tid.toString().match(/^[0-9]+$/) &&
+    params.admin.includes(req.userId)
+  ) {
+    TournamentModel.toggleState(
+      tid, { frozen: req.body.frozen, over: req.body.over });
+    res.json({});
+  }
+});
+
 router.delete("/tournaments", access.logged, access.ajax, (req,res) => {
   const tid = req.query.id;
   if (

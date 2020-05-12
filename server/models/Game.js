@@ -28,22 +28,38 @@ const GameModel = {
   checkGame: function(g) {
     return (
       !!g.tid && !!g.tid.match(/^[0-9]+$/) &&
+      !!g.round && !!g.round.match(/^[0-9]+$/) &&
       !!g.player1 && !!g.player1.match(/^[0-9]+$/) &&
       !!g.player2 && !!g.player2.match(/^[0-9]+$/) &&
-      !!g.round && !!g.round.match(/^[0-9]+$/) &&
-      (!g.score || !allowedScores.includes(g.score))
+      (!g.score || allowedScores.includes(g.score))
     );
   },
 
-  create: function(g, cb) {
+  checkGames: function(gs) {
+    return (
+      !!gs.tid && !!gs.tid.match(/^[0-9]+$/) &&
+      !!gs.round && !!gs.round.match(/^[0-9]+$/) &&
+      gs.versus.every(g => {
+        return (
+          !!g.player1 && !!g.player1.match(/^[0-9]+$/) &&
+          !!g.player2 && !!g.player2.match(/^[0-9]+$/)
+        );
+      })
+    );
+  },
+
+  create: function(gs, cb) {
     db.serialize(function() {
-      const query =
+      let query =
         "INSERT INTO Games " +
-        "(tid, round, score, glink, player1, player2) " +
-          "VALUES " +
-        "(" + g.tid + "," + g.round + ",'" + g.score + "'," +
-            "? ," + g.player1 + "," + g.player2 + ")";
-      db.run(query, g.glink, function(err) {
+        "(tid, round, player1, player2) " +
+          "VALUES ";
+      for (let g of gs.versus) {
+        query += "(" + gs.tid + "," + gs.round + "," +
+          g.player1 + "," + g.player2 + "),"
+      }
+      query = query.slice(0, -1);
+      db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });
     });
@@ -69,9 +85,9 @@ const GameModel = {
       const query =
         "UPDATE Games " +
         // Round + player1/2 won't change
-        "SET score = " + g.score + ", glink = '" + g.glink + "' " +
+        "SET score = " + g.score + ", glink = ? " +
         whereClause;
-      db.run(query);
+      db.run(query, g.glink);
     });
   }
 };

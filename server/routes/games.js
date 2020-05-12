@@ -4,9 +4,9 @@ const params = require("../config/parameters");
 const GameModel = require("../models/Game");
 
 router.post("/games", access.logged, access.ajax, (req,res) => {
-  const game = req.body.game;
-  if (GameModel.checkGame(game)) {
-    GameModel.create(game, (err, ret) => {
+  const games = req.body.games;
+  if (GameModel.checkGames(games)) {
+    GameModel.create(games, (err, ret) => {
       res.json(err || ret);
     });
   }

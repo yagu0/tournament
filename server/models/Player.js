@@ -61,7 +61,7 @@ const PlayerModel = {
     });
   },
 
-  toggle: function(o) {
+  toggleBanquit: function(o) {
     db.serialize(function() {
       let query =
         "UPDATE Players " +

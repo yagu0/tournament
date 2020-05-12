@@ -30,8 +30,7 @@ router.put("/players", access.logged, access.ajax, (req,res) => {
   }
 });
 
-// Toggle ban or quit
-router.put("/toggle", access.logged, access.ajax, (req,res) => {
+router.put("/toggle_banquit", access.logged, access.ajax, (req,res) => {
   const obj = req.body.banQuit;
   if (
     PlayerModel.checkBanQuit(obj) &&
@@ -40,7 +39,7 @@ router.put("/toggle", access.logged, access.ajax, (req,res) => {
       (!obj.ban && obj.uid == req.userId)
     )
   ) {
-    PlayerModel.toggle(obj);
+    PlayerModel.toggleBanquit(obj);
     res.json({});
   }
 });

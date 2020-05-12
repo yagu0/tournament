@@ -8,6 +8,7 @@ const db = require("../utils/database");
  *   website: varchar (limited choices)
  *   bothcol: boolean
  *   cadence: varchar
+ *   frozen: boolean
  *   completed: boolean
  *   nbRounds: integer >= 1
  */
@@ -79,6 +80,20 @@ const TournamentModel = {
         ", cadence = '" + t.cadence + "'" +
         ", nbRounds = " + t.nbRounds + " " +
         "WHERE id = " + t.id;
+      db.run(query);
+    });
+  },
+
+  toggleState: function(tid, o) {
+    db.serialize(function() {
+      let newValues =
+        "frozen = " + !!o.frozen + "," +
+        (!!o.over ? "completed = 1," : "");
+      newValues = newValues.slice(0, -1);
+      const query =
+        "UPDATE Tournament " +
+        "SET " + newValues + " " +
+        "WHERE id = " + tid;
       db.run(query);
     });
   },
