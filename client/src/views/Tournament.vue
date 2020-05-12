@@ -152,18 +152,18 @@ main
                 th Bc
                 th Perf
             tbody
-              tr(v-for="(p,i) in sortedPlayers()")
-                td {{ i }}
+              tr(v-for="(p,i) in finalGrid.ranking")
+                td {{ i + 1 }}
                 td {{ p.lastName + " " + p.firstName }}
                 td {{ p.name }}
                 td {{ p.elo }}
                 td {{ p.club }}
-                td(v-for="(r,j) in rounds")
-                  a(:href="finalGrid.rounds[i][j].url || '#'")
-                    | {{ finalGrid.rounds[i][j].value }}
-                td {{ finalGrid.score[i] }}
-                td {{ finalGrid.tieBreak[i] }}
-                td {{ finalGrid.performance[i] }}
+                td(v-for="j in rounds.length")
+                  a(:href="finalGrid.rounds[p.uid][j].url || '#'")
+                    | {{ finalGrid.rounds[p.uid][j].value }}
+                td {{ scores[p.uid] }}
+                td {{ finalGrid.tieBreak[p.uid] }}
+                td {{ finalGrid.performance[p.uid] }}
         div(v-else-if="Date.now() > tournament.dtstart")
           table(v-if="rounds.length >= 1")
             thead
@@ -664,6 +664,7 @@ export default {
         }
       );
       this.send("tournament-state", { data: { frozen: true, over: over } });
+      if (over) this.computeFinalGrid();
     },
     scoreSymbToValues: function(score) {
       switch (score) {
@@ -842,22 +843,120 @@ export default {
       }
       this.send("pairing", { data: pairing });
     },
-    // TODO:
     computeFinalGrid: function() {
-      const t = this.tournament;
-      // 'rounds' array is supposed full
+      const scoreToSymbol = (score, c) => {
+        switch (score) {
+          case "1-0": return (c == 'W' ? '+' : '-');
+          case "0-1": return (c == 'W' ? '-' : '+');
+          case "1/2": return '=';
+          case "+2": return (c == 'W' ? '++' : '--');
+          case "+1": return (c == 'W' ? '+=' : '-=');
+          case "=": return '=';
+          case "-1": return (c == 'W' ? '-=' : '+=');
+          case "-2": return (c == 'W' ? '--' : '++');
+          case "1-F": return (c == 'W' ? '>' : '<');
+          case "F-1": return (c == 'W' ? '<' : '>');
+          case "F-F": return '<';
+        }
+        return ""; //never reached
+      };
+      this.computeScores();
       const n = Object.keys(this.players).length;
-      let scores = [...Array(n).fill(0)];
-      let gameLink = ArrayFun.init(n, n, "");
-      let performance = [...Array(n).fill(0)];
-      let tieBreak = [...Array(n).fill(0)];
-      let ranking =
-        scores.map((s,i) => [s, i])
-        .sort((si1,si2) => si2[0] - si1[0])
-        .map(si => si[1]);
-      // TODO: use ranking here, to reorder (unused in display)
-      // + finalGrid.rounds[i][j].url contient les gameLinks
-      // (si dispo, sinon pas de lien) [ + .value ]
+      const L = this.rounds.length;
+      let met = {};
+      this.players.forEach(p => met[p.uid] = {});
+      for (let i=0; i<L; i++) {
+        this.rounds[i].forEach(g => {
+          this.increment(met[g.player1], g.player2);
+          this.increment(met[g.player2], g.player1);
+        });
+      }
+      let performance = {},
+          tieBreak = {};
+      const multFact = (this.tournament.bothcol ? 2 : 1);
+      // TODO: 10 here is very arbitrary
+      const minP = 1 / (multFact * 10 * this.tournament.nbRounds);
+      // Compute perf:
+      let success = {};
+      this.players.forEach(p => {
+        const pMet = Object.keys(met[p.uid]);
+        if (pMet.length == 0) performance[p.uid] = "?";
+        else {
+          // Met at least one oppponent:
+          let perf = 0;
+          let totGames = 0;
+          pMet.forEach(m => {
+            perf += met[p.uid][m] * this.players[m].elo;
+            totGames += met[p.uid][m];
+          });
+          perf /= totGames;
+          const adjustedScore =
+            this.scores[p.uid] - this.exempts.filter(e => e == p.uid).length;
+          success[p.uid] = adjustedScore / (multFact * totGames);
+          if (success[p.uid] == 0) success[p.uid] = minP;
+          else if (success[p.uid] == 1) success[p.uid] = 1 - minP;
+          const delta = -400 * Math.log10(1 / success[p.uid] - 1);
+          performance[p.uid] = perf + delta;
+        }
+      });
+      // Compute tie break:
+      this.players.forEach(p => {
+        const pMet = Object.keys(met[p.uid]);
+        if (pMet.length == 0) tieBreak[p.uid] = "?";
+        else {
+          let tb = 0;
+          let totGames = 0;
+          pMet.forEach(m => {
+            tb += met[p.uid][m] * success[m];
+            totGames += met[p.uid][m];
+          });
+          tieBreak[p.uid] = tb / totGames;
+        }
+      });
+      // Now rank players and fill variables
+      let pids = Object.keys(this.players).sort((p1,p2) => {
+        if (!this.scores[p1] && !this.scores[p2]) return 0;
+        if (!this.scores[p1]) return 1;
+        if (!this.scores[p2]) return -1;
+        // Both players have a score, perf and tie-break (usual case)
+        if (this.scores[p1] > this.scores[p2]) return -1;
+        if (this.scores[p1] < this.scores[p2]) return 1;
+        if (performance[p1] > performance[p2]) return -1;
+        if (performance[p1] < performance[p2]) return 1;
+        if (tieBreak[p1] > tieBreak[p2]) return -1;
+        if (tieBreak[p1] < tieBreak[p2]) return 1;
+        // At this stage, real ex-aequo: should happen much...
+        return 0;
+      });
+      const ranking = pids.map(uid => {
+        return Object.assign({ uid: uid }, this.players[uid]);
+      });
+      let rounds = {};
+      pids.forEach(uid => {
+        rounds[uid] = [...Array(L)];
+        for (i=0; i<L; i++) rounds[uid][i] = { url: "", value: "" };
+      });
+      for (let i=0; i<n; i++) rounds
+      let rank = {};
+      for (let i=0; i<n; i++) rank[pids[i]] = i + 1;
+      for (let i=0; i<L; i++) {
+        this.rounds[i].forEach(g => {
+          const [p1, p2] = [g.player1, g.player2];
+          rounds[p1][i].url = g.glink;
+          rounds[p2][i].url = g.glink;
+          rounds[p1][i].value = scoreToSymbol(g.score, 'W') + rank[p2];
+          if (!this.tournament.bothcol) rounds[p1][i].value += 'W';
+          rounds[p2][i].value = scoreToSymbol(g.score, 'B') + rank[p1];
+          if (!this.tournament.bothcol) rounds[p2][i].value += 'B';
+        });
+        if (!!this.exempts[i]) rounds[this.exempts[i]][i].value = "E";
+      }
+      this.finalGrid = {
+        ranking: ranking,
+        performance: performance,
+        tieBreak: tieBreak,
+        rounds: rounds
+      };
     },
     send: function(code, obj) {
       if (!!this.conn && this.conn.readyState == 1)
@@ -896,6 +995,7 @@ export default {
       );
       this.curGame = {};
     },
+    // TODO: game links could be modified even after the tournament ends
     setGameLink: function() {
       document.getElementById("modalGamelink").checked = false;
       ajax(
