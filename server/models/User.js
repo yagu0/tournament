@@ -117,7 +117,7 @@ const UserModel = {
         query =
           "UPDATE Users " +
           // Also empty the login token to invalidate future attempts
-          "SET loginToken = NULL" +
+          "SET loginToken = NULL, loginTime = NULL " +
           setSessionToken + " " +
           "WHERE id = " + id;
         db.run(query);
