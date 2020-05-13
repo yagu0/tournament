@@ -4,7 +4,31 @@
  * Commented out unit tests and moved globals into main function.
 ***************************/
 
-export function maxWeightMatching(edges, maxcardinality) {
+// Temporary run Python code on server.
+// TODO: debug function below, and use it instead.
+import { ajax } from "@/utils/ajax";
+export function maxWeightMatching(edges, cb) {
+  // Turn edges into Python arg, and transform output back
+  let pinput = "[";
+  edges.forEach(e => {
+    pinput += "(" + e[0] + "," + e[1] + "," + e[2] + "),";
+  });
+  pinput = pinput.slice(0, -1) + "]";
+  ajax(
+    "/compute_pairing",
+    "GET",
+    {
+      credentials: true,
+      data: { edges: pinput },
+      success: (res) => {
+        const assignment = JSON.parse(res.assignment);
+        cb(assignment);
+      }
+    }
+  );
+}
+
+export function maxWeightMatching_TODEBUG(edges, maxcardinality) {
   if (!edges) return [];
   const nedge = edges.length;
   let nvertex = 0;
@@ -54,7 +78,7 @@ export function maxWeightMatching(edges, maxcardinality) {
     else {
       for (let t of blossomchilds[b]) {
         if (t < nvertex) yield t;
-        else for (v of blossomLeaves(t)) yield v;
+        else for (let v of blossomLeaves(t)) yield v;
       }
     }
   }
@@ -138,7 +162,7 @@ export function maxWeightMatching(edges, maxcardinality) {
         for (v of blossomLeaves(bv))
           nblists.push(neighbend[v].map(p => Math.floor(p / 2)));
       }
-      else nblists = [blossomedges[bv]];
+      else nblists = [blossombestedges[bv]];
       for (let nblist of nblists) {
         for (k of nblist) {
           let [i, j, wt] = edges[k];
@@ -224,7 +248,8 @@ export function maxWeightMatching(edges, maxcardinality) {
     let t = v;
     while (blossomparent[t] != b) t = blossomparent[t];
     if (t >= nvertex) augmentBlossom(t, v);
-    let i = j = blossomchilds[b].findIndex(e => e == t);
+    const i = blossomchilds[b].findIndex(e => e == t);
+    let j = i;
     if (i & 1) {
       j -= blossomchilds[b].length;
       var jstep = 1;

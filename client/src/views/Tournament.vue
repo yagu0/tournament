@@ -192,6 +192,8 @@ main
                 td -
                 td X
                 td 
+          p#checkResults(v-if="roundFinishedNotAdmin()")
+            | {{ st.tr["Please check results"] }}
           div(v-if="!tournament.completed && roundCompleted()")
             button(
               v-if="rounds.length > 0 && !tournament.frozen"
@@ -739,6 +741,14 @@ export default {
         (L == 0 || this.rounds[L-1].every(g => !!g.score))
       );
     },
+    roundFinishedNotAdmin: function() {
+      const L = this.rounds.length;
+      return (
+        this.tournament.frozen &&
+        !params.admin.includes(this.st.user.id) &&
+        (L >= 1 && this.rounds[L-1].every(g => !!g.score))
+      );
+    },
     freezeResults: function() {
       this.$set(this.tournament, "frozen", true);
       ajax(
@@ -794,7 +804,12 @@ export default {
       };
       // Use current rounds state to get cumulated scores:
       let L = this.rounds.length;
-      if (L >= 1 && this.rounds[L-1].some(g => !g.score)) L--;
+      if (
+        L >= 1 &&
+        (this.tournament.frozen || this.rounds[L-1].some(g => !g.score))
+      ) {
+        L--;
+      }
       let scores = {};
       for (let i=0; i<L; i++) {
         if (!!this.exempts[i]) this.increment(scores, this.exempts[i]);
@@ -813,6 +828,7 @@ export default {
     computePairings: function() {
       if (this.tournament.frozen) {
         // The results were frozen: un-freeze first
+        this.tournament.frozen = false;
         ajax(
           "/toggle_state",
           "PUT",
@@ -833,7 +849,7 @@ export default {
         });
       let n = activePlayers.length;
       let state = {};
-      activePlayers.forEach(k => {
+      Object.keys(this.players).forEach(k => {
         state[k] = {
           met: {},
           // NOTE: colors are used only if !tournament.bothcol
@@ -884,70 +900,73 @@ export default {
           const eloJ = this.players[activePlayers[j]].elo;
           const distIJ =
             // 500: arbitrary value (should be greater than number of rounds)
-            500 * state[activePlayers[i]].met[activePlayers[j]] +
+            500 * (state[activePlayers[i]].met[activePlayers[j]] || 0) +
               Math.abs(scoreI - scoreJ) + 1 / (5 + Math.abs(eloI - eloJ));
           // Negative distance, because the algorithm maximize the cost
           edges.push([i, j, -distIJ]);
         }
       }
-      const assignment = maxWeightMatching(edges, true);
-      let alreadyPaired = {};
-      let colors = {};
-      for (let i=0; i<n; i++) {
-        const pI = activePlayers[i];
-        if (!alreadyPaired[pI]) {
-          // Color assignment: the player who had black the most takes white
-          const pJ = activePlayers[assignment[i]];
-          let pair = [pI, pJ];
-          if (
-            state[pJ].colors['N'] > state[pI].colors['N'] ||
-            (
-              state[pJ].colors['N'] == state[pI].colors['N'] &&
-              Math.random() < 0.5
-            )
-          ) {
-            pair.reverse();
-          }
-          pairing.round.push({
-            player1: parseInt(pair[0]),
-            player2: parseInt(pair[1])
-          });
-          alreadyPaired[pI] = true;
-          alreadyPaired[pJ] = true;
-        }
-      }
-      this.rounds.push(pairing.round);
-      this.exempts.push(pairing.exempt || null);
-      // Communicate pairings, to the server and to peers
-      ajax(
-        "/games",
-        "POST",
-        {
-          data: {
-            games: {
-              tid: this.tournament.id,
-              round: L + 1,
-              versus: pairing.round
+//      const assignment = maxWeightMatching(edges, true);
+      const finishPairings = (assignment) => {
+        let alreadyPaired = {};
+        let colors = {};
+        for (let i=0; i<n; i++) {
+          const pI = activePlayers[i];
+          if (!alreadyPaired[pI]) {
+            // Color assignment: the player who had black the most takes white
+            const pJ = activePlayers[assignment[i]];
+            let pair = [pI, pJ];
+            if (
+              state[pJ].colors['B'] > state[pI].colors['B'] ||
+              (
+                state[pJ].colors['B'] == state[pI].colors['B'] &&
+                Math.random() < 0.5
+              )
+            ) {
+              pair.reverse();
             }
+            pairing.round.push({
+              player1: parseInt(pair[0]),
+              player2: parseInt(pair[1])
+            });
+            alreadyPaired[pI] = true;
+            alreadyPaired[pJ] = true;
           }
         }
-      );
-      if (!!pairing.exempt) {
+        this.rounds.push(pairing.round);
+        this.exempts.push(pairing.exempt || null);
+        // Communicate pairings, to the server and to peers
         ajax(
-          "/exempts",
+          "/games",
           "POST",
           {
             data: {
-              exempt: {
+              games: {
                 tid: this.tournament.id,
                 round: L + 1,
-                player: parseInt(pairing.exempt)
+                versus: pairing.round
               }
             }
           }
         );
-      }
-      this.send("pairing", { data: pairing });
+        if (!!pairing.exempt) {
+          ajax(
+            "/exempts",
+            "POST",
+            {
+              data: {
+                exempt: {
+                  tid: this.tournament.id,
+                  round: L + 1,
+                  player: parseInt(pairing.exempt)
+                }
+              }
+            }
+          );
+        }
+        this.send("pairing", { data: pairing });
+      };
+      maxWeightMatching(edges, finishPairings);
     },
     computeFinalGrid: function() {
       const scoreToSymbol = (score, c) => {
@@ -1104,14 +1123,13 @@ export default {
         "PUT",
         {
           data: {
-            game:
-              Object.assign(
-                {
-                  tid: this.tournament.id,
-                  round: this.rounds.length
-                },
-                this.curGame
-              )
+            game: {
+              tid: this.tournament.id,
+              round: this.rounds.length,
+              player1: this.curGame.player1,
+              player2: this.curGame.player2,
+              score: score
+            }
           }
         }
       );
@@ -1130,14 +1148,13 @@ export default {
         "PUT",
         {
           data: {
-            game:
-              Object.assign(
-                {
-                  tid: this.tournament.id,
-                  round: this.rounds.length
-                },
-                this.curGame
-              )
+            game: {
+              tid: this.tournament.id,
+              round: this.rounds.length,
+              player1: this.curGame.player1,
+              player2: this.curGame.player2,
+              glink: this.curGame.glink
+            }
           }
         }
       );
@@ -1219,17 +1236,16 @@ export default {
           }
           break;
         }
-        case "game-update":
-          if (!this.tournament.frozen) {
-            let game = data.data;
-            const L = this.rounds.length;
-            const rIdx =
-              this.rounds[L-1].findIndex(g => g.player1 == game.player1);
-            delete game["player1"];
-            this.$set(this.rounds[L-1], rIdx,
-              Object.assign(this.rounds[L-1][rIdx], game));
-          }
+        case "game-update": {
+          let game = data.data;
+          const L = this.rounds.length;
+          const rIdx =
+            this.rounds[L-1].findIndex(g => g.player1 == game.player1);
+          delete game["player1"];
+          this.$set(this.rounds[L-1], rIdx,
+            Object.assign(this.rounds[L-1][rIdx], game));
           break;
+        }
         case "newchat": {
           let chat = data.data;
           this.$refs["chatcomp"].newChat(chat);
@@ -1261,6 +1277,10 @@ table
   max-height: 100%
   td
     border-left: 1px solid darkgrey
+
+#checkResults
+  text-align: center
+  font-weight: bold
 
 button
   display: inline-block

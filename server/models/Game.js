@@ -82,11 +82,11 @@ const GameModel = {
         "  AND player1 = " + g.player1 +
         "  AND round = " + g.round;
       if (!admin.includes(uid))
-        whereClause += " AND " + uid + " IN (player1, player2) = " + uid;
+        whereClause += " AND " + uid + " IN (player1, player2)";
+      const setCmd = (!g.score ? "glink = ?" : "score = '" + g.score + "'");
       const query =
         "UPDATE Games " +
-        // Round + player1/2 won't change
-        "SET score = '" + g.score + "', glink = ? " +
+        "SET " + setCmd + " " +
         whereClause;
       db.run(query, g.glink);
     });

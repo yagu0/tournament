@@ -59,6 +59,7 @@ export const translations = {
   Platform: "Platform",
   "Player": "Player",
   Players: "Players",
+  "Please check results": "Please check results",
   Previous_t: "Previous",
   "Processing... Please wait": "Processing... Please wait",
   Refuse: "Refuse",
