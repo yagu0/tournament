@@ -31,7 +31,11 @@ export default {
   methods: {
     classObject: function(chat) {
       return {
-        "my-chatmsg": chat.name == this.st.user.name
+        "my-chatmsg": (
+          chat.name == this.st.user.name ||
+          chat.name ==
+            this.st.user.firstName + "_" + this.st.user.lastName.charAt(0)
+        )
       };
     },
     sendChat: function() {

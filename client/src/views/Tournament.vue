@@ -143,21 +143,19 @@ main
             thead
               tr
                 th Pl
-                th {{ st.tr["Name"] }}
+                //th {{ st.tr["Name"] }}
                 th {{ st.tr["Username"] }}
                 th ELO
-                th {{ st.tr["Club"] }}
-                th(v-for="(r,i) in rounds") {{ "R" + i }}
+                th(v-for="(r,i) in rounds") {{ "R" + (i+1) }}
                 th {{ st.tr["Score"] }}
                 th TB
                 th Perf
             tbody
               tr(v-for="(p,i) in finalGrid.ranking")
                 td {{ i + 1 }}
-                td {{ p.lastName.toUpperCase() + " " + p.firstName }}
+                //td {{ p.lastName.toUpperCase() + " " + p.firstName }}
                 td {{ p.name }}
                 td {{ p.elo }}
-                td {{ p.club }}
                 td(v-for="j in rounds.length")
                   a(
                     v-if="!!finalGrid.rounds[p.uid][j-1].url"
@@ -390,7 +388,7 @@ export default {
                 res.users.forEach(u =>
                   chatIds[u.id] = u.firstName + "_" + u.lastName.charAt(0));
                 this.chats.forEach(
-                  c => { if (!!chatIds[c.uid]) c.name = chatIds[uid]; });
+                  c => { if (!!chatIds[c.uid]) c.name = chatIds[c.uid]; });
                 this.$refs["chatcomp"].$forceUpdate();
               }
             }
@@ -459,7 +457,7 @@ export default {
               {
                 data: { tid: this.$route.params["id"] },
                 success: (res) => {
-                  this.chats = res.chats;
+                  this.chats = res.chats.sort((c1,c2) => c2.added - c1.added);
                   chatsRetrieved = true;
                   if (playersRetrieved) fillChatNames();
                 }
@@ -1257,6 +1255,7 @@ export default {
           const newState = data.data;
           this.$set(this.tournament, "frozen", !!newState.frozen);
           this.$set(this.tournament, "completed", !!newState.over);
+          if (!!newState.over) this.computeFinalGrid();
           break;
         }
       }
