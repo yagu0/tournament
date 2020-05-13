@@ -1,5 +1,6 @@
 Email notifications 1h before tournament
 Debug utils/mwmatching3.js
+The "Load more" button needs to be clicked twice (?!)
 In Tournament.vue:
  - middle click admin follow profile link
  - allow games URL edit even after tournament
