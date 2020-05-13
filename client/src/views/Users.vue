@@ -14,7 +14,7 @@ main
           @click="tryToggleActive(u)"
           :class="{inactive: !u.active}"
         )
-          td {{ u.lastName }}
+          td {{ u.lastName.toUpperCase() }}
           td {{ u.firstName }}
           //td {{ u.license }}
           td {{ u.club }}
@@ -54,7 +54,7 @@ export default {
         .sort((u1, u2) => {
           if (!u1.active && !!u2.active) return -1;
           if (!!u1.active && !u2.active) return 1;
-          if (u1.lname == u2.lname)
+          if (u1.lastName == u2.lastName)
             return u1.firstName.localeCompare(u2.firstName);
           return u1.lastName.localeCompare(u2.lastName);
         })

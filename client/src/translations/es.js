@@ -4,6 +4,7 @@ export const translations = {
   Apply: "Appliquer",
   "Are you sure?": "Êtes-vous sûr ?",
   "Authentication successful!": "Authentification réussie !",
+  "Ban player?": "Prohibir jugador",
   "Beginner": "Principiante",
   Cadence: "Cadencia",
   Cancel: "Anular",
@@ -27,6 +28,7 @@ export const translations = {
   "First name": "Primer nombre",
   "Freeze results": "Congelar resultados",
   "Game link": "URL partida",
+  "Give link": "Dar URL",
   "Give the result in chat": "Da el resultado en el chat",
   Go: "Go",
   "In progress": "En curso",
@@ -75,6 +77,7 @@ export const translations = {
   Time: "Tiempo",
   Title: "Titulo",
   "Time before start:": "Tiempo antes de comenzar:",
+  Tournament: "Torneo",
   Tournaments: "Torneos",
   "Two games": "Dos partidas",
   "Unknown rating:": "Clasificación desconocida:",
@@ -85,5 +88,7 @@ export const translations = {
   "Username": "Apodo",
   Users: "Usuarios",
   Validate: "Validar",
+  View: "Mirar",
+  "Withdraw from tournament?": "¿Retirarse del torneo?",
   "Wrong time control": "Cadencia incorrecta"
 };

@@ -10,7 +10,10 @@ const db = require("../utils/database");
 
 const ChatModel = {
   checkChat: function(c) {
-    return !!c.tid && c.tid.toString().match(/^[0-9]+$/);
+    return (
+      !!c.tid && c.tid.toString().match(/^[0-9]+$/) &&
+      !!c.uid && c.uid.toString().match(/^[0-9]+$/)
+    );
   },
 
   create: function(c, cb) {

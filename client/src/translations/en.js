@@ -4,6 +4,7 @@ export const translations = {
   Apply: "Apply",
   "Are you sure?": "Are you sure?",
   "Authentication successful!": "Authentication successful!",
+  "Ban player?": "Ban player?",
   "Beginner": "Beginner",
   Cadence: "Cadence",
   Cancel: "Cancel",
@@ -26,7 +27,8 @@ export const translations = {
   "Finish tournament": "Finish tournament",
   "First name": "First name",
   "Freeze results": "Freeze results",
-  "Game link": "Game link",
+  "Game link": "Game URL",
+  "Give link": "Give URL",
   "Give the result in chat": "Give the result in chat",
   Go: "Go",
   "In progress": "In progress",
@@ -75,6 +77,7 @@ export const translations = {
   Time: "Time",
   Title: "Title",
   "Time before start:": "Time before start:",
+  Tournament: "Tournament",
   Tournaments: "Tournaments",
   "Two games": "Two games",
   "Unknown rating:": "Unknown rating:",
@@ -85,5 +88,7 @@ export const translations = {
   "Username": "Username",
   Users: "Users",
   Validate: "Validate",
+  View: "View",
+  "Withdraw from tournament?": "Withdraw from tournament?",
   "Wrong time control": "Wrong time control"
 };

@@ -16,7 +16,7 @@ router.post("/chats", access.logged, access.ajax, (req,res) => {
 });
 
 router.get("/chats", access.ajax, (req,res) => {
-  const tid = req.query["id"];
+  const tid = req.query["tid"];
   if (!!tid && !!tid.match(/^[0-9]+$/)) {
     ChatModel.getAll(tid, (err, chats) => {
       res.json(err || { chats: chats });

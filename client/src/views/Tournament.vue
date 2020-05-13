@@ -154,7 +154,7 @@ main
             tbody
               tr(v-for="(p,i) in finalGrid.ranking")
                 td {{ i + 1 }}
-                td {{ p.lastName + " " + p.firstName }}
+                td {{ p.lastName.toUpperCase() + " " + p.firstName }}
                 td {{ p.name }}
                 td {{ p.elo }}
                 td {{ p.club }}
@@ -181,8 +181,8 @@ main
                 v-for="g in rounds[rounds.length-1]"
                 :class="{ 'my-pairing': isMyGame(g) }"
               )
-                td {{ nameAndScore(g.player1) }}
-                td {{ nameAndScore(g.player2) }}
+                td(@click="tryChallengeOpp(g)") {{ nameAndScore(g.player1) }}
+                td(@click="tryChallengeOpp(g)") {{ nameAndScore(g.player2) }}
                 td(@click="tryShowModalScore(g)") {{ g.score || "*" }}
                 td(@click="setLinkOrShowGame(g)")
                   button(:disabled="!g.glink && !isMyGame(g)")
@@ -209,9 +209,9 @@ main
             )
               | {{ st.tr["Finish tournament"] }}
         div(v-else)
-          p
-            span {{ st.tr["Time before start:"] }} 
-            span#countdown
+          #centerTime
+            p {{ st.tr["Time before start:"] }} 
+            p#countdown
 </template>
 
 <script>
@@ -368,6 +368,34 @@ export default {
       };
       let scoresComputed = false;
       let playersRetrieved = false;
+      let chatsRetrieved = false;
+      const fillChatNames = () => {
+        this.chats.forEach(c => {
+          if (!!this.players[c.uid]) c.name = this.players[c.uid].name;
+        });
+        let chatIds = {};
+        this.chats.forEach(c => {
+          if (!this.players[c.uid]) chatIds[c.uid] = true;
+        });
+        const uids = Object.keys(chatIds);
+        if (uids.length > 0) {
+          ajax(
+            "/users",
+            "GET",
+            {
+              data: { ids: uids },
+              success: (res) => {
+                res.users.forEach(u =>
+                  chatIds[u.id] = u.firstName + "_" + u.lastName.charAt(0));
+                this.chats.forEach(
+                  c => { if (!!chatIds[c.uid]) c.name = chatIds[uid]; });
+                this.$refs["chatcomp"].$forceUpdate();
+              }
+            }
+          );
+        }
+        else this.$refs["chatcomp"].$forceUpdate();
+      };
       ajax(
         "/tournaments",
         "GET",
@@ -413,6 +441,7 @@ export default {
                           if (p.uid == this.st.user.id)
                             this.st.user.name = p.name;
                           playersRetrieved = true;
+                          if (chatsRetrieved) fillChatNames();
                           if (scoresComputed && this.tournament.completed)
                             this.computeFinalGrid();
                         });
@@ -422,8 +451,6 @@ export default {
                 }
               }
             );
-            if (res.tournament.dtstart > Date.now()) return;
-            // Tournament has started (may be finished):
             ajax(
               "/chats",
               "GET",
@@ -431,6 +458,8 @@ export default {
                 data: { tid: this.$route.params["id"] },
                 success: (res) => {
                   this.chats = res.chats;
+                  chatsRetrieved = true;
+                  if (playersRetrieved) fillChatNames();
                 }
               }
             );
@@ -578,7 +607,7 @@ export default {
       return (
         // At the beginning players might not be initialized
         !!this.players[uid]
-          ? this.players[uid].name + "[" + this.scores[uid] + "]"
+          ? this.players[uid].name + " [" + this.scores[uid] + "]"
           : ""
       );
     },
@@ -624,13 +653,22 @@ export default {
         this.tryActionPlayer(p, 'ban');
       }
     },
+    followProfileLink: function(name) {
+      switch (this.tournament.website) {
+        case "lichess":
+          window.open("https://lichess.org/@/" + name, "_blank");
+        case "vchess":
+          // No profile pages on vchess (just short bio)
+          break;
+      }
+    },
+    // TODO: middle click (admin) => follow profile link
     tryActionPlayer: function(p, action) {
       const admin = params.admin.includes(this.st.user.id);
       const targetSelf = (this.st.user.id == p.uid);
-      if (this.tournament.completed || (!targetSelf && !admin)) {
+      if (this.tournament.completed || (!targetSelf && !admin))
         // Too late, or "unauthorized" user: no action to perform
-        window.open(this.getProfileLink(p.name), "_blank");
-      }
+        this.followProfileLink(p.name);
       else {
         // Allow changes until T - 5min (seems reasonable)
         if (
@@ -650,7 +688,12 @@ export default {
               Object.assign(p, { quit: !p.quit }));
           }
           else if (action == "ban") {
-            if (!admin || (!p.ban && !confirm("Ban player?"))) return;
+            if (
+              !admin ||
+              (!p.ban && !confirm(this.st.tr["Ban player?"]))
+            ) {
+              return;
+            }
             this.$set(this.players, p.uid,
               Object.assign(p, { ban: !p.ban }));
           }
@@ -669,13 +712,24 @@ export default {
         }
       }
     },
-    getProfileLink: function(name) {
-      switch (this.tournament.website) {
-        case "lichess":
-          return "https://lichess.org/@/" + name;
-        case "vchess":
-          // No profile pages on lichess (just short bio)
-          return "#";
+    tryChallengeOpp: function(g) {
+      let opp = null;
+      if (g.player1 == this.st.user.id) opp = g.player2;
+      else if (g.player2 == this.st.user.id) opp = g.player1;
+      if (!!opp) {
+        switch (this.tournament.website) {
+          case "lichess":
+            window.open(
+              "https://lichess.org/?user=" +
+              this.players[opp].name + "#friend",
+              "_blank"
+            );
+            break;
+          case "vchess":
+            // No individual challenge link: just redirect to hall
+            window.open("https://vchess.club", "_blank");
+            break;
+        }
       }
     },
     roundCompleted: function() {
@@ -1068,6 +1122,7 @@ export default {
       this.curGame = {};
     },
     // TODO: game links could be modified even after the tournament ends
+    // (by anyone ? Just admin ?)
     setGamelink: function() {
       document.getElementById("modalGamelink").checked = false;
       ajax(
@@ -1101,16 +1156,23 @@ export default {
     },
     viewGameBtn: function(g) {
       if ([g.player1, g.player2].includes(this.st.user.id))
-        return "Edit link";
-      return "View";
+        return this.st.tr["Give link"];
+      return this.st.tr["View"];
     },
     processChat: function(chat) {
       if (this.st.user.id > 0) {
         this.send("newchat", { data: chat });
+        // Store only user IDs, and retrieve names at loading
         ajax(
           "/chats",
           "POST",
-          { data: chat }
+          {
+            data: {
+              tid: this.tournament.id,
+              uid: this.st.user.id,
+              msg: chat.msg
+            }
+          }
         );
       }
     },
@@ -1191,8 +1253,14 @@ export default {
 #aboveTour
   text-align: center
 
+#chatWrap > .card, #joinWrap > .card, #gamelinkWrap > .card, #scoreWrap > .card
+  max-width: 768px
+  max-height: 100%
+
 table
   max-height: 100%
+  td
+    border-left: 1px solid darkgrey
 
 button
   display: inline-block
@@ -1201,6 +1269,16 @@ button
 button#joinBtn, button#confirmBtn
   display: block
   margin: 0 auto
+
+#centerTime
+  width: 100%
+  margin-top: 25px
+  & > p
+    text-align: center
+    //vertical-align: middle
+
+#countdown
+  font-size: 3em
 
 button#chatBtn
   display: inline-flex
