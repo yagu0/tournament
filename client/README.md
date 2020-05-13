@@ -4,6 +4,8 @@
 ```
 npm install
 ```
+Also rename src/parameters.js.dist into src/parameters.js
+and adjust file content.
 
 ### Compiles and hot-reloads for development
 ```
@@ -27,3 +29,12 @@ npm run lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+## Resources
+
+- Vue.js + Vue router,
+- Webpack,
+- mini.css
+
+Sounds and images where found at various locations.
+Fonts were found on Google Fonts.
