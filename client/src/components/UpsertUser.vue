@@ -27,20 +27,20 @@ div
         | )
       div(@keyup.enter="onSubmit()")
         fieldset
-          label(for="u_useremail") {{ st.tr["Email"] }}
+          label(for="u_useremail") {{ st.tr["Email"] }} *
           input#u_useremail(
             type="email"
             v-model="user.email"
           )
         div(v-show="stage!='Login'")
           fieldset
-            label(for="u_firstname") {{ st.tr["First name"] }}
+            label(for="u_firstname") {{ st.tr["First name"] }} *
             input#u_firstname(
               type="text"
               v-model="user.firstName"
             )
           fieldset
-            label(for="u_lastname") {{ st.tr["Last name"] }}
+            label(for="u_lastname") {{ st.tr["Last name"] }} *
             input#u_lastname(
               type="text"
               v-model="user.lastName"
