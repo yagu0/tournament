@@ -89,7 +89,7 @@ export const translations = {
   View: "Mirar",
   Website: "Sitio web",
   "Withdraw from tournament?": "¿Retirarse del torneo?",
-  "Wrong time control": "Cadencia incorrecta"
+  "Wrong time control": "Cadencia incorrecta",
 
   // Form error messages:
   "ELO: positive integer": "ELO : entero positivo",

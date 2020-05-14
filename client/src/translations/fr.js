@@ -89,7 +89,7 @@ export const translations = {
   View: "Voir",
   Website: "Site web",
   "Withdraw from tournament?": "Sortir du tournoi ?",
-  "Wrong time control": "Cadence erronée"
+  "Wrong time control": "Cadence erronée",
 
   // Form error messages:
   "ELO: positive integer": "ELO : entier positif",
