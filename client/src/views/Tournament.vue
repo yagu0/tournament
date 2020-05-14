@@ -93,7 +93,7 @@ main
           button.black-win F-1
   .row
     #aboveTour.col-sm-12
-      span.clickable(onClick="window.doClick('modalTinfos')")
+      span#tournamentTitle(onClick="window.doClick('modalTinfos')")
         | {{ tournament.title }}
       button#chatBtn(
         onClick="window.doClick('modalChat')"
@@ -124,7 +124,7 @@ main
             tr
               th {{ st.tr["Name"] }}
               th {{ st.tr["Username"] }}
-              th ELO
+              th ELO ({{ tournament.website }})
               th {{ st.tr["Club"] }}
           tbody
             tr(
@@ -145,7 +145,7 @@ main
                 th Pl
                 //th {{ st.tr["Name"] }}
                 th {{ st.tr["Username"] }}
-                th ELO
+                th ELO ({{ tournament.website }})
                 th(v-for="(r,i) in rounds") {{ "R" + (i+1) }}
                 th {{ st.tr["Score"] }}
                 th TB
@@ -294,7 +294,7 @@ export default {
     showJoinButton: function() {
       return (
         Date.now() < this.tournament.dtstart &&
-        this.st.user.id > 0 &&
+        this.st.user.id > 0 && !!this.st.user.active &&
         !Object.keys(this.players).includes(this.st.user.id.toString())
       );
     },
@@ -409,24 +409,24 @@ export default {
               "GET",
               {
                 data: { tid: this.$route.params["id"] },
-                success: (res) => {
-                  if (!res.players || res.players.length == 0) return;
+                success: (res2) => {
+                  if (!res2.players || res2.players.length == 0) return;
                   ajax(
                     "/users",
                     "GET",
                     {
-                      data: { ids: res.players.map(p => p.uid) },
-                      success: (res2) => {
+                      data: { ids: res2.players.map(p => p.uid) },
+                      success: (res3) => {
                         // User IDs may not appear in the same order
                         let users = {};
-                        res2.users.forEach(u => {
+                        res3.users.forEach(u => {
                           users[u.id] = {
                             firstName: u.firstName,
                             lastName: u.lastName,
                             club: u.club
                           };
                         });
-                        res.players.forEach(p => {
+                        res2.players.forEach(p => {
                           this.$set(this.players, p.uid,
                             Object.assign(
                               {
@@ -440,11 +440,11 @@ export default {
                           );
                           if (p.uid == this.st.user.id)
                             this.st.user.name = p.name;
-                          playersRetrieved = true;
-                          if (chatsRetrieved) fillChatNames();
-                          if (scoresComputed && this.tournament.completed)
-                            this.computeFinalGrid();
                         });
+                        playersRetrieved = true;
+                        if (chatsRetrieved) fillChatNames();
+                        if (scoresComputed && this.tournament.completed)
+                          this.computeFinalGrid();
                       }
                     }
                   );
@@ -456,8 +456,8 @@ export default {
               "GET",
               {
                 data: { tid: this.$route.params["id"] },
-                success: (res) => {
-                  this.chats = res.chats.sort((c1,c2) => c2.added - c1.added);
+                success: (res2) => {
+                  this.chats = res2.chats.sort((c1,c2) => c2.added - c1.added);
                   chatsRetrieved = true;
                   if (playersRetrieved) fillChatNames();
                 }
@@ -468,13 +468,13 @@ export default {
               "GET",
               {
                 data: { tid: this.$route.params["id"] },
-                success: (res) => {
-                  if (res.games.length == 0) return;
+                success: (res2) => {
+                  if (res2.games.length == 0) return;
                   // Reorganize games data into rounds array.
                   // Final round may have incomplete result.
-                  const L = Math.max.apply(null, res.games.map(g => g.round));
+                  const L = Math.max.apply(null, res2.games.map(g => g.round));
                   this.rounds = [...Array(L)].map(r => []);
-                  res.games.forEach(g => {
+                  res2.games.forEach(g => {
                     this.rounds[g.round - 1].push({
                       player1: g.player1,
                       player2: g.player2,
@@ -488,8 +488,8 @@ export default {
                     "GET",
                     {
                       data: { tid: this.$route.params["id"] },
-                      success: (res) => {
-                        res.exempts.forEach(e => {
+                      success: (res3) => {
+                        res3.exempts.forEach(e => {
                           this.exempts[e.round - 1] = e.player; //not null
                         });
                         this.computeScores();
@@ -557,6 +557,7 @@ export default {
         );
         return;
       }
+      if (!this.st.user.active) return;
       const earlyRegistration =
         (Date.now() < this.tournament.dtstart - CONFIRM_WINDOW);
       const newPlayer =
@@ -1276,6 +1277,10 @@ table
   max-height: 100%
   td
     border-left: 1px solid darkgrey
+
+#tournamentTitle
+  text-decoration: underline
+  cursor: pointer
 
 #checkResults
   text-align: center

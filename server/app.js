@@ -8,7 +8,7 @@ const params = require('./config/parameters');
 
 var app = express();
 
-app.use(favicon(path.join(__dirname, "static", "favicon.ico")));
+app.use(favicon(path.join(__dirname, "static", "favicon.png")));
 
 if (app.get('env') === 'development')
   // Full logging in development mode

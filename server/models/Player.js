@@ -30,9 +30,10 @@ const PlayerModel = {
     db.serialize(function() {
       const query =
         "INSERT INTO Players " +
-        "(uid, tid, name, elo) " +
+        "(uid, tid, name, elo, quit) " +
           "VALUES " +
-        "(" + p.uid + "," + p.tid + ",'" + p.name + "'," + p.elo + ")";
+        "(" + p.uid + "," + p.tid + ",'" + p.name + "'," +
+          p.elo + "," + !!p.quit + ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });
