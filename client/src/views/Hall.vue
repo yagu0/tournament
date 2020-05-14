@@ -181,7 +181,7 @@ export default {
       newTour.dtstart = Date.parse(newTour.dtstart);
       const error = checkTournament(newTour);
       if (!!error) {
-        alert(error);
+        alert(this.st.tr[error]);
         return;
       }
       else {

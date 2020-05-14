@@ -32,7 +32,6 @@ export const translations = {
   "Give the result in chat": "Give the result in chat",
   Go: "Go",
   "In progress": "In progress",
-  "Invalid email": "Invalid email",
   "Intermediate": "Intermediate",
   Join: "Join",
   "Known rating": "Known rating",
@@ -44,8 +43,6 @@ export const translations = {
   Logout: "Logout",
   "Logout successful!": "Logout successful!",
   "Master": "Master",
-  "Missing email": "Missing email",
-  "Missing name": "Missing name",
   "Modifications applied!": "Modifications applied!",
   Next_t: "Next",
   "Next round": "Next round",
@@ -90,6 +87,22 @@ export const translations = {
   Users: "Users",
   Validate: "Validate",
   View: "View",
+  Website: "Website",
   "Withdraw from tournament?": "Withdraw from tournament?",
   "Wrong time control": "Wrong time control"
+
+  // Form error messages:
+  "ELO: positive integer": "ELO: positive integer",
+  "User name: alphanumerics, underscore and hyphen": "User name: alphanumerics, underscore and hyphen",
+  "Start time is missing or too soon": "Start time is missing or too soon",
+  "Rounds count: positive integer": "Rounds count: positive integer",
+  "Wrong cadence (alphanumerics, space, '+' and '_')": "Wrong cadence (alphanumerics, space, '+' and '_')",
+  "Missing or unsupported platform": "Missing or unsupported platform",
+  "Names: letters, apostrophe, space and hyphen": "Names: letters, apostrophe, space and hyphen",
+  "Club: letters, numbers, apostrophe, space and hyphen": "Club: letters, numbers, apostrophe, space and hyphen",
+  "License: alphanumerics": "License: alphanumerics",
+  "Missing title": "Missing title",
+  "Missing email": "Missing email",
+  "Missing name": "Missing name",
+  "Invalid email": "Invalid email"
 };

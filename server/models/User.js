@@ -22,10 +22,17 @@ const sendEmail = require('../utils/mailer');
 const UserModel = {
   checkUser: function(o) {
     return (
-      (!!o.firstName && !!o.firstName.match(/^[a-zA-Z-]+$/)) &&
-      (!!o.lastName && !!o.firstName.match(/^[a-zA-Z'-]+$/)) &&
+      [o.firstName, o.lastName].every(name => {
+        return (
+          !!name &&
+          !!name.match(/^[a-zA-ZáàâäãåçéèêëíìîïñóòôöõúùûüýÿæœÁÀÂÄÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸÆŒ'-]+$/)
+        );
+      }) &&
       UserModel.checkEmail(o.email) &&
-      (!o.club || !!o.club.match(/^[\w' -]+$/)) &&
+      (
+        !o.club ||
+        !!o.club.match(/^[\wáàâäãåçéèêëíìîïñóòôöõúùûüýÿæœÁÀÂÄÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸÆŒ' -]+$/)
+      ) &&
       (!o.license || !!o.license.match(/^[\w-]+$/))
     );
   },

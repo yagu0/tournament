@@ -24,6 +24,7 @@ main
     .card
       label.modal-close(for="modalTinfos")
       #tournamentInfos
+        p {{ st.tr["Website"] }} : {{ website }}
         p {{ st.tr["Cadence"] }} : {{ tournament.cadence }}
         p {{ tournament.nbRounds }} {{ st.tr["rounds"] }}
         p(v-if="tournament.bothcol") st.tr["Round trip"]
@@ -280,6 +281,15 @@ export default {
   },
   beforeDestroy: function() {
     this.cleanBeforeDestroy();
+  },
+  computed: {
+    website: function() {
+      switch (this.tournament.website) {
+        case "lichess": return "https://lichess.org";
+        case "vchess": return "https://vchess.club";
+      }
+      return ""; //never reached
+    }
   },
   methods: {
     showConfirmButton: function() {
@@ -564,7 +574,7 @@ export default {
         Object.assign({ quit: earlyRegistration }, this.newPlayer);
       const error = checkPlayer(newPlayer);
       if (!!error) {
-        alert(error);
+        alert(this.st.tr[error]);
         return;
       }
       ajax(

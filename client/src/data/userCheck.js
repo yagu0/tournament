@@ -1,8 +1,18 @@
 export function checkUser(u) {
   if (!u.firstName || !u.lastName) return "Missing name";
-  for (let name of [u.firstName, u.lastName, u.club]) {
-    if (!!name && !name.match(/^[a-zA-Z' -]+$/))
-      return "Names & club: letters, apostrophe, space and hyphen";
+  for (let name of [u.firstName, u.lastName]) {
+    if (
+      !!name &&
+      !name.match(/^[a-zA-ZáàâäãåçéèêëíìîïñóòôöõúùûüýÿæœÁÀÂÄÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸÆŒ' -]+$/)
+    ) {
+      return "Names: letters, apostrophe, space and hyphen";
+    }
+  }
+  if (
+    !!u.club &&
+    !u.club.match(/^[\wáàâäãåçéèêëíìîïñóòôöõúùûüýÿæœÁÀÂÄÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸÆŒ' -]+$/)
+  ) {
+    return "Club: letters, numbers, apostrophe, space and hyphen";
   }
   const emailError = checkEmail(u.email);
   if (!!emailError) return emailError;
