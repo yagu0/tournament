@@ -61,7 +61,7 @@ const TournamentModel = {
       const query =
         "SELECT * " +
         "FROM Tournaments " +
-        "WHERE stage <= 3" +
+        "WHERE stage <= 3";
       db.all(query, (err, tournaments) => {
         cb(err, tournaments || []);
       });
