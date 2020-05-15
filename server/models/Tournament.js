@@ -56,12 +56,24 @@ const TournamentModel = {
     });
   },
 
+  getRunningUpcoming: function(cb) {
+    db.serialize(function() {
+      const query =
+        "SELECT * " +
+        "FROM Tournaments " +
+        "WHERE stage <= 3" +
+      db.all(query, (err, tournaments) => {
+        cb(err, tournaments || []);
+      });
+    });
+  },
+
   getNext: function(cursor, cb) {
     db.serialize(function() {
       const query =
         "SELECT * " +
         "FROM Tournaments " +
-        "WHERE dtstart < " + cursor + " " +
+        "WHERE stage == 4 AND dtstart < " + cursor + " " +
         "ORDER BY dtstart DESC " +
         "LIMIT 20"; //TODO: 20 is arbitrary
       db.all(query, (err, tournaments) => {

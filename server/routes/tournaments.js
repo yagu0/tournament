@@ -25,6 +25,11 @@ router.get("/tournaments", access.ajax, (req,res) => {
       res.json(err || { tournaments: tournaments });
     });
   }
+  else {
+    TournamentModel.getRunningUpcoming((err, tournaments) => {
+      res.json(err || { tournaments: tournaments });
+    });
+  }
 });
 
 // Temporary: compute pairings on server (TODO: in browser instead)

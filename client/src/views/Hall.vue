@@ -126,23 +126,16 @@ export default {
       "/tournaments",
       "GET",
       {
-        data: { cursor: this.cursor },
         success: (res) => {
-          const now = Date.now();
-          this.pastTournaments = [];
           res.tournaments.forEach(t => {
-            if (t.dtstart < now) {
-              if (t.completed) {
-                this.pastTournaments.push(t);
-                if (t.dtstart < this.cursor) this.cursor = t.dtstart;
-              }
-              else this.currTournaments.push(t);
-            }
-            else this.nextTournaments.push(t);
+            if (t.stage <= 1) this.nextTournaments.push(t);
+            else this.currTournaments.push(t);
           });
         }
       }
     );
+    // And past tournaments as well:
+    this.loadMore();
   },
   beforeDestroy: function() {
     this.cleanBeforeDestroy();
@@ -199,7 +192,7 @@ export default {
         );
       }
     },
-    loadMore: function(type, cb) {
+    loadMore: function() {
       ajax(
         "/tournaments",
         "GET",
@@ -213,7 +206,6 @@ export default {
                 this.pastTournaments.concat(res.tournaments);
             }
             else this.hasMore = false;
-            if (!!cb) cb();
           }
         }
       );
