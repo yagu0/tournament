@@ -16,7 +16,7 @@ const router = new Router({
       component: loadView("Hall")
     },
     {
-      path: "/tournament/:id([0-9]+)",
+      path: "/:id([0-9]+)",
       name: "tournament",
       component: loadView("Tournament")
     },

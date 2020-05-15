@@ -10,6 +10,8 @@ export function checkTournament(t) {
     return "Start time is missing or too soon";
   if (!t.nbRounds || t.nbRounds <= 0)
     return "Rounds count: positive integer";
+  if (t.allRounds && t.nbRounds % 2 == 0)
+    return "Rounds count must be odd if all rounds";
   if (!t.cadence.match(/^[\w+ -]+$/))
     return "Wrong cadence (alphanumerics, space, '+' and '_')";
   if (!allowedWebsites.includes(t.website))

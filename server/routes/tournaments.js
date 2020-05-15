@@ -59,10 +59,11 @@ router.put("/toggle_state", access.logged, access.ajax, (req,res) => {
   const tid = req.body.tid;
   if (
     !!tid && !!tid.toString().match(/^[0-9]+$/) &&
+    (!req.body.stage || Number.isInteger(req.body.stage)) &&
     params.admin.includes(req.userId)
   ) {
     TournamentModel.toggleState(
-      tid, { frozen: req.body.frozen, over: req.body.over });
+      tid, { frozen: req.body.frozen, stage: req.body.stage });
     res.json({});
   }
 });

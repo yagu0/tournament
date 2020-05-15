@@ -1,13 +1,11 @@
 <template lang="pug">
 div
-  button(@click="clearHistory()")
-    | {{ st.tr["Clear history"] }}
   input#inputChat(
     type="text"
     :placeholder="st.tr['Chat here']"
     @keyup.enter="sendChat()"
+    @contextmenu="confirmClear($event)"
   )
-  button(@click="sendChat()") {{ st.tr["Send"] }}
   p(v-for="chat in chats.concat(pastChats)")
     span.name {{ chat.name }} :&nbsp;
     span(
@@ -64,15 +62,23 @@ export default {
     newChat: function(chat) {
       if (chat.msg != "") this.chats.unshift(chat);
     },
-    clearHistory: function() {
-      this.chats = [];
-      this.$emit("chatcleared");
+    confirmClear: function(e) {
+      e.preventDefault();
+      if (confirm(this.st.tr["Clear history"])) {
+        this.chats = [];
+        this.$emit("chatcleared");
+      }
     }
   }
 };
 </script>
 
 <style lang="sass" scoped>
+#inputChat
+  display: block
+  margin: 0
+  width: 100%
+
 .name
   color: #839192
 

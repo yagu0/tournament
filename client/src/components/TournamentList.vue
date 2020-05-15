@@ -33,7 +33,7 @@ export default {
   },
   methods: {
     showTournament: function(t) {
-      this.$router.push("/tournament/" + t.id);
+      this.$router.push("/" + t.id);
     },
     sortedTournaments: function() {
       // Show in start time order:

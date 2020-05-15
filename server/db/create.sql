@@ -22,10 +22,11 @@ create table Tournaments (
   --'lichess', 'vchess', ...etc, to know profile+challenge links
   website varchar,
   bothcol boolean,
+  allRounds boolean,
   cadence varchar,
   nbRounds integer,
   frozen boolean,
-  completed boolean
+  stage integer default 0
 );
 
 create table Chats (

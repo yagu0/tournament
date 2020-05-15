@@ -48,14 +48,13 @@ main
         | {{ st.tr["Send"] }}
   .row
     .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
-      h4 {{ st.tr["Tournaments"] }}
       .button-group
         button.tabbtn#pastTournaments(@click="setDisplay('past',$event)")
-          | {{ st.tr["Finished"] }}
+          | {{ st.tr["Finished tournaments"] }}
         button.tabbtn#currTournaments(@click="setDisplay('curr',$event)")
-          | {{ st.tr["In progress"] }}
+          | {{ st.tr["Tournaments in progress"] }}
         button.tabbtn#nextTournaments(@click="setDisplay('next',$event)")
-          | {{ st.tr["Upcoming"] }}
+          | {{ st.tr["Upcoming tournaments"] }}
       button#newTournamentBtn(
         v-if="isAdmin"
         @click="showNewTournamentModal()"
@@ -227,10 +226,6 @@ export default {
 [type="checkbox"].modal+div .card
   max-width: 500px
   max-height: 100%
-
-h4
-  font-weight: bold
-  text-align: center
 
 .active
   color: #388e3c

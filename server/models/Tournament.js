@@ -7,9 +7,10 @@ const db = require("../utils/database");
  *   title: varchar
  *   website: varchar (limited choices)
  *   bothcol: boolean
+ *   allRounds: boolean
  *   cadence: varchar
  *   frozen: boolean
- *   completed: boolean
+ *   stage: integer
  *   nbRounds: integer >= 1
  */
 
@@ -33,9 +34,9 @@ const TournamentModel = {
     db.serialize(function() {
       const query =
         "INSERT INTO Tournaments " +
-        "(dtstart, title, website, bothcol, cadence, nbRounds) " +
+        "(dtstart, title, website, allRounds, bothcol, cadence, nbRounds) " +
           "VALUES " +
-        "(" + t.dtstart + ", ?, '" + t.website + "'," +
+        "(" + t.dtstart + ", ?, '" + t.website + "'," + !!t.allRounds + "," +
             !!t.bothcol + ",'" + t.cadence  + "'," + t.nbRounds + ")";
       db.run(query, t.title, function(err) {
         cb(err, { id: this.lastID });
@@ -76,7 +77,8 @@ const TournamentModel = {
         "SET dtstart = " + t.dtstart +
         ", title = '" + t.title + "'" +
         ", website = '" + t.website + "'" +
-        ", bothcol = " + t.bothcol +
+        ", bothcol = " + !!t.bothcol +
+        ", allRounds = " + !!t.allRounds +
         ", cadence = '" + t.cadence + "'" +
         ", nbRounds = " + t.nbRounds + " " +
         "WHERE id = " + t.id;
@@ -87,9 +89,13 @@ const TournamentModel = {
   toggleState: function(tid, o) {
     db.serialize(function() {
       let newValues =
-        "frozen = " + !!o.frozen + "," +
-        (!!o.over ? "completed = 1," : "");
-      newValues = newValues.slice(0, -1);
+        (
+          o.frozen !== undefined
+            ? "frozen = " + !!o.frozen + (!!o.stage ? "," : "")
+            : ""
+        ) +
+        // Testing !!o.stage because no update to zero
+        (!!o.stage ? "stage = " + o.stage : "");
       const query =
         "UPDATE Tournaments " +
         "SET " + newValues + " " +
