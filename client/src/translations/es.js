@@ -16,6 +16,7 @@ export const translations = {
   Confirm: "Confirmar",
   "Connection token sent. Check your emails!": "Token de conexión enviado. ¡Revisa tus correos!",
   Contact: "Contacto",
+  days: "dias",
   Delete: "Borrar",
   Download: "Descargar",
   Edit: "Editar",

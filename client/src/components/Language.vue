@@ -1,11 +1,5 @@
 <template lang="pug">
 div
-  -
-    var langName = {
-      "en": "English",
-      "es": "Español",
-      "fr": "Français",
-    };
   input#modalLang.modal(type="checkbox")
   #languageDiv(
     role="dialog"
@@ -16,9 +10,12 @@ div
       fieldset
         label(for="langSelect") {{ st.tr["Language"] }}
         select#langSelect(@change="setLanguage($event)")
-          each language,langCode in langName
-            option(value=langCode selected=(lang==langCode))
-              =language
+          option(
+            v-for="k in Object.keys(langName)"
+            :value="k"
+            :selected="st.lang == k"
+          )
+            | {{ langName[k] }}
 </template>
 
 <script>
@@ -28,7 +25,12 @@ export default {
   name: "my-language",
   data: function() {
     return {
-      st: store.state
+      st: store.state,
+      langName: {
+        "en": "English",
+        "es": "Español",
+        "fr": "Français",
+      }
     };
   },
   mounted: function() {

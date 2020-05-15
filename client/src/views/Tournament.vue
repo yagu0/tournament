@@ -375,15 +375,19 @@ export default {
           this.display = "tournament";
         const now = Math.round(Date.now() / 1000);
         if (now < this.tournament.dtstart) {
-          countdown = this.tournament.dtstart - now;
-          let remainingTime = document.getElementById("countdown");
-          remainingTime.innerHTML = ppt(countdown);
-          this.timer = setInterval(
+          this.$nextTick(
             () => {
-              if (--countdown <= 0) clearInterval(this.timer);
-              else remainingTime.innerHTML = ppt(countdown);
-            },
-            1000
+              countdown = this.tournament.dtstart - now;
+              let remainingTime = document.getElementById("countdown");
+              remainingTime.innerHTML = ppt(countdown, this.st.tr);
+              this.timer = setInterval(
+                () => {
+                  if (--countdown <= 0) clearInterval(this.timer);
+                  else remainingTime.innerHTML = ppt(countdown, this.st.tr);
+                },
+                1000
+              );
+            }
           );
         }
         // Initialize connection + focus listeners

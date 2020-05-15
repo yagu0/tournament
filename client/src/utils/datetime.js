@@ -27,7 +27,7 @@ function padDigits(x) {
   return x;
 }
 
-export function ppt(t) {
+export function ppt(t, tr) {
   // "Pretty print" an amount of time given in seconds
   const dayInSeconds = 60 * 60 * 24;
   const hourInSeconds = 60 * 60;
@@ -38,7 +38,7 @@ export function ppt(t) {
   let res = "";
   // NOTE: 3 days limit is rather arbitrary
   if (days >= 3 && hours >= 12) days++;
-  if (days > 0) res += days + "d ";
+  if (days > 0) res += days + " " + tr["days"] + " ";
   if (days < 3 && hours > 0) res += hours + "h ";
   if (days == 0 && minutes > 0)
     res += hours > 0 ? padDigits(minutes) + "m " : minutes + ":";
