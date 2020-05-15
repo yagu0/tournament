@@ -152,7 +152,7 @@ const UserModel = {
     db.serialize(function() {
       const query =
         "UPDATE Users " +
-        "SET active = '" + active + "'" +
+        "SET active = " + active + " " +
         "WHERE id = " + id;
       db.run(query);
     });
