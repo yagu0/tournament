@@ -212,7 +212,7 @@ main
             @click="gotoNextStage()"
           )
             | {{ st.tr[nextStageText()] }}
-          #centerTime(v-if="Date.now() < tournament.dtstart")
+          #centerTime(v-if="Date.now() / 1000 < tournament.dtstart")
             p {{ st.tr["Estimated time before start:"] }}
             p#countdown
 </template>
@@ -373,9 +373,9 @@ export default {
         if (this.tournament.stage >= 3)
           // Tournament running or completed: focus on tournament
           this.display = "tournament";
-        const now = Date.now();
+        const now = Math.round(Date.now() / 1000);
         if (now < this.tournament.dtstart) {
-          countdown = (this.tournament.dtstart - now) / 1000;
+          countdown = this.tournament.dtstart - now;
           let remainingTime = document.getElementById("countdown");
           remainingTime.innerHTML = ppt(countdown);
           this.timer = setInterval(

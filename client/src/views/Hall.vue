@@ -33,6 +33,12 @@ main
             v-model="newtour.bothcol"
           )
         fieldset
+          label(for="t_allrounds") {{ st.tr["All rounds"] }}
+          input#t_allrounds(
+            type="checkbox"
+            v-model="newtour.allRounds"
+          )
+        fieldset
           label(for="t_cadence") {{ st.tr["Cadence"] }}
           input#t_cadence(
             type="text"
@@ -163,6 +169,7 @@ export default {
         title: "Tournament title",
         website: "lichess",
         bothcol: false,
+        allRounds: false,
         cadence: "3+2",
         nbRounds: 7
       };
@@ -170,7 +177,7 @@ export default {
     },
     onSubmit: function() {
       let newTour = JSON.parse(JSON.stringify(this.newtour));
-      newTour.dtstart = Date.parse(newTour.dtstart);
+      newTour.dtstart = Math.round(Date.parse(newTour.dtstart) / 1000);
       const error = checkTournament(newTour);
       if (!!error) {
         alert(this.st.tr[error]);
