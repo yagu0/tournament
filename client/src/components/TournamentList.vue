@@ -5,8 +5,8 @@ div
       tr
         th {{ st.tr["Title"] }}
         th {{ st.tr["Cadence"] }}
-        th {{ st.tr["Length"] }}
-        th {{ st.tr["Start"] }}
+        th {{ st.tr["Rounds count"] }}
+        th {{ st.tr["Start time"] }}
     tbody
       tr(
         v-for="t in sortedTournaments()"
@@ -45,9 +45,9 @@ export default {
       );
     },
     timestamp2datetime: function(ts) {
-      return new Date(ts).toLocaleString();
+      return new Date(ts * 1000).toLocaleString();
       // Or next line (also replace regexp "\..*$" by "")
-      //return new Date(ts).toISOString().replace("T"," ");
+      //return new Date(ts * 1000).toISOString().replace("T"," ");
     }
   }
 };
