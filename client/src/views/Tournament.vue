@@ -1346,11 +1346,17 @@ h4
   color: darkred
 
 .left
+  float: left
   background-color: var(--card-back-color)
   width: 25%
+  @media screen and (max-width: 767px)
+    width: 100%
 
 .right
+  float: left
   width: 75%
+  @media screen and (max-width: 767px)
+    width: 100%
 
 .fullwidth
   width: 100%
