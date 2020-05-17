@@ -292,6 +292,7 @@ export default {
   methods: {
     showConfirmButton: function() {
       return (
+        this.st.user.id > 0 &&
         Object.keys(this.players).includes(this.st.user.id.toString()) &&
         !!this.players[this.st.user.id].quit &&
         this.tournament.stage == 1
@@ -1122,10 +1123,10 @@ export default {
         // Both players have a score, perf and tie-break (usual case)
         if (this.scores[p1] > this.scores[p2]) return -1;
         if (this.scores[p1] < this.scores[p2]) return 1;
-        if (performance[p1] > performance[p2]) return -1;
-        if (performance[p1] < performance[p2]) return 1;
         if (tieBreak[p1] > tieBreak[p2]) return -1;
         if (tieBreak[p1] < tieBreak[p2]) return 1;
+        if (performance[p1] > performance[p2]) return -1;
+        if (performance[p1] < performance[p2]) return 1;
         // At this stage, real ex-aequo: should happen much...
         return 0;
       });
