@@ -1,7 +1,9 @@
 Email notifications 1h before tournament
+(Also email notification when a new tournament is created?)
 Debug utils/mwmatching3.js
 The "Load more" button needs to be clicked twice (?!)
 Passworded tournaments?
+Admin option to send email to all users?
 In Tournament.vue:
  - middle click admin follow profile link
  - allow games URL edit even after tournament
