@@ -976,8 +976,8 @@ export default {
               pair.reverse();
             }
             pairing.round.push({
-              player1: parseInt(pair[0]),
-              player2: parseInt(pair[1])
+              player1: parseInt(pair[0], 10),
+              player2: parseInt(pair[1], 10)
             });
             alreadyPaired[pI] = true;
             alreadyPaired[pJ] = true;
@@ -1008,7 +1008,7 @@ export default {
                 exempt: {
                   tid: this.tournament.id,
                   round: L + 1,
-                  player: parseInt(pairing.exempt)
+                  player: parseInt(pairing.exempt, 10)
                 }
               }
             }
