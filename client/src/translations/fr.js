@@ -18,6 +18,7 @@ export const translations = {
   Contact: "Contact",
   days: "jours",
   Delete: "Supprimer",
+  "Delete tournament?": "Supprimer le tournoi ?",
   Download: "Télécharger",
   Edit: "Éditer",
   Email: "Email",

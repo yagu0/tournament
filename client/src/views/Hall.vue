@@ -220,7 +220,7 @@ export default {
       }
     },
     tryDeleteTournament: function(tid) {
-      if (confirm(this.st.tr["Are you sure?"])) {
+      if (confirm(this.st.tr["Delete tournament?"])) {
         ajax(
           "/tournaments",
           "DELETE",
