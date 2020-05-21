@@ -1135,9 +1135,14 @@ export default {
       });
       // Now rank players and fill variables
       let pids = Object.keys(this.players).sort((p1,p2) => {
-        if (!this.scores[p1] && !this.scores[p2]) return 0;
-        if (!this.scores[p1]) return 1;
-        if (!this.scores[p2]) return -1;
+        if (
+          [null, undefined].includes(this.scores[p1]) &&
+          [null, undefined].includes(this.scores[p2])
+        ) {
+          return 0;
+        }
+        if ([null, undefined].includes(this.scores[p1])) return 1;
+        if ([null, undefined].includes(this.scores[p2])) return -1;
         // Both players have a score, perf and tie-break (usual case)
         if (this.scores[p1] > this.scores[p2]) return -1;
         if (this.scores[p1] < this.scores[p2]) return 1;
@@ -1145,7 +1150,7 @@ export default {
         if (tieBreak[p1] < tieBreak[p2]) return 1;
         if (performance[p1] > performance[p2]) return -1;
         if (performance[p1] < performance[p2]) return 1;
-        // At this stage, real ex-aequo: should happen much...
+        // At this stage, real ex-aequo: shouldn't happen much...
         return 0;
       });
       const ranking = pids.map(uid => {
