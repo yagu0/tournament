@@ -13,44 +13,43 @@ main
           label(for="t_dtstart") {{ st.tr["Start time"] }}
           input#t_dtstart(
             type="datetime-local"
-            v-model="newtour.dtstart"
-          )
+            v-model="newtour.dtstart")
         fieldset
           label(for="t_title") {{ st.tr["Title"] }}
           input#t_title(
             type="text"
-            v-model="newtour.title"
-          )
+            v-model="newtour.title")
         fieldset
           label(for="t_website") {{ st.tr["Platform"] }}
           select#t_website(v-model="newtour.website")
             option(value="lichess") lichess.org
             option(value="vchess") vchess.club
+        fieldset(v-show="newtour.website == 'vchess'")
+          label(for="t_variant") {{ st.tr["Variant"] }}
+          input#t_variant(
+            type="text"
+            v-model="newtour.variant")
         fieldset
           label(for="t_bothcol") {{ st.tr["Two games"] }}
           input#t_bothcol(
             type="checkbox"
-            v-model="newtour.bothcol"
-          )
+            v-model="newtour.bothcol")
         fieldset
           label(for="t_allrounds") {{ st.tr["All rounds"] }}
           input#t_allrounds(
             type="checkbox"
-            v-model="newtour.allRounds"
-          )
+            v-model="newtour.allRounds")
         fieldset
           label(for="t_cadence") {{ st.tr["Cadence"] }}
           input#t_cadence(
             type="text"
-            v-model="newtour.cadence"
-          )
+            v-model="newtour.cadence")
         fieldset
           label(for="t_nbRounds") {{ st.tr["Rounds count"] }}
           input#t_nbRounds(
             type="number"
-            v-model="newtour.nbRounds"
-          )
-      button#submitBtn(@click="onSubmit()")
+            v-model="newtour.nbRounds")
+      button#submitBtn(@click="upsertTournament()")
         | {{ st.tr["Send"] }}
   .row
     .col-sm-12.col-md-10.col-md-offset-1.col-lg-8.col-lg-offset-2
@@ -69,15 +68,20 @@ main
       TournamentList(
         v-show="display=='past'"
         :tournaments="pastTournaments"
+        @edit-tour="editTournament"
+        @delete-tour="tryDeleteTournament"
       )
-      // TODO: delete + edit options if admin, for current and next tournaments
       TournamentList(
         v-show="display=='curr'"
         :tournaments="currTournaments"
+        @edit-tour="editTournament"
+        @delete-tour="tryDeleteTournament"
       )
       TournamentList(
         v-show="display=='next'"
         :tournaments="nextTournaments"
+        @edit-tour="editTournament"
+        @delete-tour="tryDeleteTournament"
       )
       button#loadMoreBtn(
         v-show="hasMore"
@@ -175,9 +179,18 @@ export default {
       };
       doClick("modalNewtour");
     },
-    onSubmit: function() {
+    editTournament: function(tid) {
+      const tournaments = this[this.display + "Tournaments"];
+      this.newtour =
+        JSON.parse(JSON.stringify(tournaments.find(t => t.id == tid)));
+      this.newtour.dtstart =
+        new Date(this.newtour.dtstart * 1000).toISOString().slice(0, -8),
+      doClick("modalNewtour");
+    },
+    upsertTournament: function() {
       let newTour = JSON.parse(JSON.stringify(this.newtour));
-      newTour.dtstart = Math.round(Date.parse(newTour.dtstart) / 1000);
+      if (!Number.isInteger(newTour.dtstart))
+        newTour.dtstart = Math.round(Date.parse(newTour.dtstart) / 1000);
       const error = checkTournament(newTour);
       if (!!error) {
         alert(this.st.tr[error]);
@@ -186,12 +199,37 @@ export default {
       else {
         ajax(
           "/tournaments",
-          "POST",
+          !newTour.id ? "POST" : "PUT",
           {
             data: { tournament: newTour },
             success: (ret) => {
+              if (!newTour.id) {
+                newTour.id = ret.id;
+                this.nextTournaments.push(newTour);
+              }
+              else {
+                let tournaments = this[this.display + "Tournaments"];
+                const tIdx = tournaments.findIndex(t => t.id == newTour.id);
+                this.$set(tournaments, tIdx, newTour);
+              }
+              this.newtour = {};
+              document.getElementById("modalNewtour").checked = false;
+            }
+          }
+        );
+      }
+    },
+    tryDeleteTournament: function(tid) {
+      if (confirm(this.st.tr["Are you sure?"])) {
+        ajax(
+          "/tournaments",
+          "DELETE",
+          {
+            data: { id: tid },
+            success: (ret) => {
               newTour.id = ret.id;
-              this.nextTournaments.push(newTour);
+              let tournaments = this[this.display + "Tournaments"];
+              ArrayFun.remove(tournament, t => t.id == tid);
               this.newtour = {};
               document.getElementById("modalNewtour").checked = false;
             }

@@ -10,7 +10,9 @@ div
     tbody
       tr(
         v-for="t in sortedTournaments()"
-        @click="showTournament(t)"
+        @click.left="showTournament(t)"
+        @click.middle="tryEmitEdit($event, t.id)"
+        @contextmenu="tryEmitDelete($event, t.id)"
       )
         td {{ t.title }}
         td {{ t.cadence }}
@@ -23,6 +25,7 @@ div
 <script>
 import { store } from "@/store";
 import { ajax } from "@/utils/ajax";
+import params from "@/parameters";
 export default {
   name: "my-tournament-list",
   props: ["tournaments"],
@@ -34,6 +37,16 @@ export default {
   methods: {
     showTournament: function(t) {
       this.$router.push("/" + t.id);
+    },
+    tryEmitEdit: function(e, tid) {
+      if (!params.admin.includes(this.st.user.id)) return;
+      e.preventDefault();
+      this.$emit('edit-tour', tid);
+    },
+    tryEmitDelete: function(e, tid) {
+      if (!params.admin.includes(this.st.user.id)) return;
+      e.preventDefault();
+      this.$emit('delete-tour', tid);
     },
     sortedTournaments: function() {
       // Show in start time order:

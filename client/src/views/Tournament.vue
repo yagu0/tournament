@@ -124,7 +124,8 @@ main
           tbody
             tr(
               v-for="p in sortedPlayers()"
-              @click="tryActionPlayer(p,'quit')"
+              @click.left="tryActionPlayer(p,'quit')"
+              @click.middle="tryAdminEdit($event,p)"
               @contextmenu="tryShowDeleteBox($event,p)"
               :class="{quit: p.quit, ban: p.ban}"
             )
@@ -587,10 +588,11 @@ export default {
     },
     re_joinTournament: function() {
       document.getElementById("modalJoin").checked = false;
-      if (Object.keys(this.players).some(k => k == this.st.user.id)) {
+      this.newPlayer.id  = this.newPlayer.uid || this.st.user.id;
+      if (Object.keys(this.players).some(k => k == this.newPlayer.id)) {
         // Edit mode: elo and/or (user) name may have changed
-        this.$set(this.players, this.st.user.id,
-          Object.assign(this.players[this.st.user.id], this.newPlayer));
+        this.$set(this.players, this.newPlayer.id,
+          Object.assign(this.players[this.newPlayer.id], this.newPlayer));
         ajax(
           "/players",
           "PUT",
@@ -691,6 +693,23 @@ export default {
         { data: { uid : this.st.user.id, quit: false } }
       );
     },
+    tryAdminEdit: function(e, p) {
+      e.preventDefault();
+      if (
+        this.tournament.stage >= 3 ||
+        !params.admin.includes(this.st.user.id)
+      ) {
+        this.followProfileLink(p.name);
+      }
+      else {
+        this.newPlayer = {
+          uid: p.uid,
+          name: p.name,
+          elo: p.elo
+        };
+        doClick("modalJoin");
+      }
+    },
     tryShowDeleteBox: function(e, p) {
       if (this.st.user.id == p.uid && this.tournament.stage <= 1) {
         e.preventDefault();
@@ -721,7 +740,6 @@ export default {
           break;
       }
     },
-    // TODO: middle click (admin) => follow profile link
     tryActionPlayer: function(p, action) {
       const admin = params.admin.includes(this.st.user.id);
       const targetSelf = (this.st.user.id == p.uid);
