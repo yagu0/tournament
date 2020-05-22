@@ -25,7 +25,10 @@ main
         input#joinName(type="text" v-model="newPlayer.name")
       fieldset
         label(for="joinElo") {{ st.tr["Known rating"] }}
-        input#joinElo(type="number" v-model="newPlayer.elo")
+        input#joinElo(
+          type="number"
+          v-model="newPlayer.elo"
+          @keyup.enter="re_joinTournament()")
         label(for="joinEstimElo") {{ st.tr["Unknown rating:"] }}
         select#joinEstimElo(v-model="newPlayer.elo")
           option(value="1200") {{ st.tr["Beginner"] }}
@@ -34,7 +37,7 @@ main
           option(value="2100") {{ st.tr["Expert"] }}
           option(value="2400") {{ st.tr["Master"] }}
       fieldset
-        button(@click="re_joinTournament()") {{ st.tr["Send"] }}
+        button.center-btn(@click="re_joinTournament()") {{ st.tr["Send"] }}
   input#modalGamelink.modal(type="checkbox")
   div#gamelinkWrap(
     role="dialog"
@@ -587,6 +590,11 @@ export default {
       document.getElementById(otherType).classList.remove("active");
     },
     re_joinTournament: function() {
+      const error = checkPlayer(this.newPlayer);
+      if (!!error) {
+        alert(this.st.tr[error]);
+        return;
+      }
       document.getElementById("modalJoin").checked = false;
       this.newPlayer.id  = this.newPlayer.uid || this.st.user.id;
       if (Object.keys(this.players).some(k => k == this.newPlayer.id)) {
@@ -622,11 +630,6 @@ export default {
       const earlyRegistration = (this.tournament.stage == 0);
       const newPlayer =
         Object.assign({ quit: earlyRegistration }, this.newPlayer);
-      const error = checkPlayer(newPlayer);
-      if (!!error) {
-        alert(this.st.tr[error]);
-        return;
-      }
       ajax(
         "/players",
         "POST",
@@ -905,6 +908,18 @@ export default {
     },
     // rounds[L-1] is supposed completed:
     computePairings: function() {
+      let activePlayers =
+        Object.keys(this.players).filter(k => {
+          return (
+            (!this.players[k].quit || this.tournament.allRounds) &&
+            !this.players[k].ban
+          );
+        });
+      let n = activePlayers.length;
+      if (n <= 1) {
+        alert(this.st.tr["Not enough players"]);
+        return;
+      }
       if (this.tournament.frozen) {
         // The results were frozen: un-freeze first
         this.tournament.frozen = false;
@@ -922,14 +937,6 @@ export default {
       }
       const L = this.rounds.length;
       this.computeScores();
-      let activePlayers =
-        Object.keys(this.players).filter(k => {
-          return (
-            (!this.players[k].quit || this.tournament.allRounds) &&
-            !this.players[k].ban
-          );
-        });
-      let n = activePlayers.length;
       let state = {};
       Object.keys(this.players).forEach(k => {
         state[k] = {
@@ -958,12 +965,12 @@ export default {
         if (this.tournament.allRounds) exempt = L - 1;
         else {
           let minScore = Infinity;
+          const multFact = (this.tournament.bothcol ? 2 : 1);
           activePlayers.forEach(k => {
             const scoreE =
               state[k].exempt +
-              // Divide by 2(4) * L to work with bothcol == true or not
-              this.scores[k] / (2 * (L + 1)) +
-              (1 - 1 / this.players[k].elo) / (4 * (L + 1));
+              (this.scores[k] + 1 - 1 / this.players[k].elo)
+                / (multFact * (L + 1));
             if (scoreE < minScore) {
               minScore = scoreE;
               exempt = k;
@@ -1387,6 +1394,10 @@ h4
   @media screen and (min-width: 768px)
     margin-left: 10%
     width: 80%
+
+.center-btn
+  display: block
+  margin: 0 auto
 
 #endRoundAction
   text-align: center

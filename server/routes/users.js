@@ -18,7 +18,7 @@ router.post('/register', access.unlogged, access.ajax, (req,res) => {
       else {
         user.id = ret.id;
         setAndSendLoginToken(
-          "Welcome to " + params.siteURL, user, res, "signup");
+          "Welcome to " + params.siteURL, user, "signup");
         res.json({});
       }
     });
@@ -30,16 +30,8 @@ router.get("/whoami", access.ajax, (req,res) => {
   if (!req.cookies.token) res.json({});
   else if (req.cookies.token.match(/^[a-z0-9]+$/)) {
     UserModel.getOne("sessionToken", req.cookies.token, (err, user) => {
-      if (!user) res.json({});
-      else {
-        // Some fields shouldn't be passed to the app:
-        delete user["loginToken"];
-        delete user["loginTime"];
-        delete user["sessionToken"];
-        delete user["created"];
-        res.json(user);
-      }
-    });
+      res.json(user || {});
+    }, "id, firstName, lastName, email, license, club, active");
   }
 });
 
@@ -82,7 +74,7 @@ router.put('/de_activate', access.logged, access.ajax, (req,res) => {
 // Authentication-related methods:
 
 // to: object user (to who we send an email)
-function setAndSendLoginToken(subject, to, res, signup) {
+function setAndSendLoginToken(subject, to, signup) {
   // Set login token and send welcome(back) email with auth link
   const token = genToken(params.token.length);
   UserModel.setLoginToken(token, to.id);
@@ -117,10 +109,10 @@ router.get('/sendtoken', access.unlogged, access.ajax, (req,res) => {
   if (UserModel.checkEmail(email)) {
     UserModel.getOne("email", email, (err,user) => {
       access.checkRequest(res, err, user, "Unknown user", () => {
-        setAndSendLoginToken("Token for " + params.siteURL, user, res);
+        setAndSendLoginToken("Token for " + params.siteURL, user);
         res.json({});
       });
-    });
+    }, "id, firstName, lastName, email");
   }
 });
 
@@ -145,7 +137,7 @@ router.get('/authenticate', access.unlogged, access.ajax, (req,res) => {
         });
       }
     });
-  });
+  }, "id, firstName, lastName, email, license, club, active");
 });
 
 router.get('/logout', access.logged, access.ajax, (req,res) => {

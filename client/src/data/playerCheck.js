@@ -1,7 +1,7 @@
 export function checkPlayer(p) {
-  if (!p.elo.toString().match(/^[0-9]+$/))
+  if (!p.elo || !p.elo.toString().match(/^[0-9]+$/))
     return "Elo: positive integer";
-  if (!p.name.match(/^[\w-]+$/))
+  if (!p.name || !p.name.match(/^[\w-]+$/))
     return "User name: alphanumerics, underscore and hyphen";
   return "";
 }

@@ -5,7 +5,7 @@ const sendEmail = require('../utils/mailer');
 
 /*
  * Structure:
- *   _id: integer
+ *   id: integer
  *   firstName: varchar
  *   lastName: varchar
  *   email: varchar
@@ -64,12 +64,12 @@ const UserModel = {
   },
 
   // Find one user by email or token
-  getOne: function(by, value, cb) {
+  getOne: function(by, value, cb, fields) {
     // TODO: all possible values are strings now
     const delimiter = (typeof value === "string" ? "'" : "");
     db.serialize(function() {
       const query =
-        "SELECT * " +
+        "SELECT " + (fields || "*") + " " +
         "FROM Users " +
         "WHERE " + by + " = " + delimiter + value + delimiter;
       db.get(query, cb);
@@ -171,7 +171,7 @@ const UserModel = {
   tryNotify: function(id, message) {
     UserModel.getOne("id", id, (err,user) => {
       if (!err && user.notify) UserModel.notify(user, message);
-    });
+    }, "firstName, lastName, email");
   },
 
   ////////////

@@ -56,6 +56,7 @@ export const translations = {
   "No users found :(": "Aucun utilisateur trouvé :(",
   "Notifications by email": "Notifications par email",
   "Name": "Identité",
+  "Not enough players": "Pas assez de joueurs",
   "Number": "Nombre",
   "Participant(s):": "Participant(s):",
   Platform: "Plateforme",

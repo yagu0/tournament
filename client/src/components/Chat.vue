@@ -33,8 +33,8 @@ export default {
           !!this.st.user.firstName &&
           (
             chat.name == this.st.user.name ||
-            chat.name ==
-              this.st.user.firstName + "_" + this.st.user.lastName.charAt(0)
+            chat.name == this.st.user.firstName + "_" +
+              this.st.user.lastName.charAt(0).toUpperCase()
           )
         )
       };
@@ -55,7 +55,7 @@ export default {
           this.st.user.name ||
           (
             this.st.user.firstName + "_" +
-            this.st.user.lastName.charAt(0)
+            this.st.user.lastName.charAt(0).toUpperCase()
           )
         )
       };
