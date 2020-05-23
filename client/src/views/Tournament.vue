@@ -117,7 +117,7 @@ main
           onClick="window.doClick('modalJoin')"
         )
           | {{ st.tr["Join"] }}
-        p(v-else="inactiveAndEarlyStage()")
+        p#warnInactive(v-else-if="inactiveAndEarlyStage()")
           | {{ st.tr["Your account isn't activated yet. Please reload this page later"] }}
         table
           thead
@@ -1401,6 +1401,10 @@ h4
 .center-btn
   display: block
   margin: 0 auto
+
+#warnInactive
+  text-align: center
+  font-style: italic
 
 #endRoundAction
   text-align: center
