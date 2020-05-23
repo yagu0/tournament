@@ -98,6 +98,7 @@ export const translations = {
   Website: "Site web",
   "Withdraw from tournament?": "Sortir du tournoi ?",
   "Wrong time control": "Cadence erronée",
+  "Your account isn't activated yet. Please reload this page later": "Votre compte n'est pas encore activé. Veuillez recharger cette page plus tard",
 
   // Form error messages:
   "Elo: positive integer": "Elo : entier positif",

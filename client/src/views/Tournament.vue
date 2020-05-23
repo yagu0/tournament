@@ -117,6 +117,8 @@ main
           onClick="window.doClick('modalJoin')"
         )
           | {{ st.tr["Join"] }}
+        p(v-else="inactiveAndEarlyStage()")
+          | {{ st.tr["Your account isn't activated yet. Please reload this page later"] }}
         table
           thead
             tr
@@ -142,7 +144,6 @@ main
             thead
               tr
                 th Pl
-                //th {{ st.tr["Name"] }}
                 th {{ st.tr["Username"] }}
                 th Elo ({{ tournament.website }})
                 th(v-for="(r,i) in rounds") {{ "R" + (i+1) }}
@@ -152,7 +153,6 @@ main
             tbody
               tr(v-for="(p,i) in finalGrid.ranking")
                 td {{ i + 1 }}
-                //td {{ p.lastName.toUpperCase() + " " + p.firstName }}
                 td {{ p.name }}
                 td {{ p.elo }}
                 td(v-for="j in rounds.length")
@@ -332,6 +332,9 @@ export default {
         this.conn.removeEventListener("message", this.socketMessageListener);
         this.conn = null;
       }
+    },
+    inactiveAndEarlyStage: function() {
+      return this.tournament.stage <= 1 && !this.st.user.active;
     },
     nextStageText: function() {
       switch (this.tournament.stage) {

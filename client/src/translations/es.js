@@ -97,6 +97,7 @@ export const translations = {
   Website: "Sitio web",
   "Withdraw from tournament?": "¿Retirarse del torneo?",
   "Wrong time control": "Cadencia incorrecta",
+  "Your account isn't activated yet. Please reload this page later": "Tu cuenta aún no está activada. Vuelva a cargar esta página más tarde",
 
   // Form error messages:
   "Elo: positive integer": "Elo : entero positivo",

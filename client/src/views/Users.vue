@@ -12,7 +12,7 @@ main
         tr(
           v-for="u in sortedUsers"
           @click="tryToggleActive(u)"
-          :class="{inactive: !u.active}"
+          :class="{inactive: isInactive(u)}"
         )
           td {{ u.lastName.toUpperCase() }}
           td {{ u.firstName }}
@@ -50,10 +50,11 @@ export default {
       const admin = params.admin.includes(this.st.user.id);
       return (
         this.users
-        .filter(u => admin || u.active)
         .sort((u1, u2) => {
-          if (!u1.active && !!u2.active) return -1;
-          if (!!u1.active && !u2.active) return 1;
+          if (admin) {
+            if (!u1.active && !!u2.active) return -1;
+            if (!!u1.active && !u2.active) return 1;
+          }
           if (u1.lastName == u2.lastName)
             return u1.firstName.localeCompare(u2.firstName);
           return u1.lastName.localeCompare(u2.lastName);
@@ -62,6 +63,10 @@ export default {
     }
   },
   methods: {
+    isInactive: function(u) {
+      const admin = params.admin.includes(this.st.user.id);
+      return admin && !u.active;
+    },
     tryToggleActive: function(u) {
       if (params.admin.includes(this.st.user.id)) {
         u.active = !u.active;
