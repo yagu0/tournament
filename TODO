@@ -7,6 +7,7 @@ Passworded tournaments?
 Admin option to send email to all users?
 In Tournament.vue:
  - allow games URL edit even after tournament
- - allow to cancel tournament (eg. if not enough players)
+ - allow to end earlier or cancel tournament (eg. if not enough players)
+ - allow to go back and relaunch round if mistakes
  - Audio file isn't played at new round
  - select box to look back at previous rounds?
