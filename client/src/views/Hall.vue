@@ -227,7 +227,6 @@ export default {
           {
             data: { id: tid },
             success: (ret) => {
-              newTour.id = ret.id;
               let tournaments = this[this.display + "Tournaments"];
               ArrayFun.remove(tournament, t => t.id == tid);
               this.newtour = {};
