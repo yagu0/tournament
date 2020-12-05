@@ -21,11 +21,6 @@ const router = new Router({
       component: loadView("Tournament")
     },
     {
-      path: "/users",
-      name: "users",
-      component: loadView("Users")
-    },
-    {
       path: "/authenticate/:token",
       name: "authenticate",
       component: loadView("Auth")

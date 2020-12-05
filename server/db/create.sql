@@ -19,8 +19,7 @@ create table Tournaments (
   id integer primary key,
   dtstart datetime,
   title varchar,
-  --'lichess', 'vchess', ...etc, to know profile+challenge links
-  website varchar,
+  variant varchar,
   bothcol boolean,
   allRounds boolean,
   cadence varchar,

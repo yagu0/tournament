@@ -9,6 +9,7 @@ const db = require("../utils/database");
  */
 
 const ChatModel = {
+
   checkChat: function(c) {
     return (
       !!c.tid && c.tid.toString().match(/^[0-9]+$/) &&
@@ -40,6 +41,7 @@ const ChatModel = {
       });
     });
   }
+
 };
 
 module.exports = ChatModel;

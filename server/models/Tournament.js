@@ -5,7 +5,7 @@ const db = require("../utils/database");
  *   id: integer
  *   dtstart: datetime
  *   title: varchar
- *   website: varchar (limited choices)
+ *   variant: varchar
  *   bothcol: boolean
  *   allRounds: boolean
  *   cadence: varchar
@@ -14,11 +14,6 @@ const db = require("../utils/database");
  *   nbRounds: integer >= 1
  */
 
-const allowedWebsite = [
-  "lichess",
-  "vchess"
-];
-
 const TournamentModel = {
   checkTournament: function(t) {
     return (
@@ -26,7 +21,7 @@ const TournamentModel = {
       !!t.dtstart && !!t.dtstart.toString().match(/^[0-9]+$/) &&
       !!t.nbRounds && !!t.nbRounds.toString().match(/^[0-9]+$/) &&
       !!t.cadence && !!t.cadence.match(/^[\w+ -]+$/) &&
-      allowedWebsite.includes(t.website)
+      !!t.variant && !!t.variant.match(/^[\w]+$/)
     );
   },
 
@@ -34,11 +29,11 @@ const TournamentModel = {
     db.serialize(function() {
       const query =
         "INSERT INTO Tournaments " +
-        "(dtstart, title, website, allRounds, bothcol, cadence, nbRounds) " +
+        "(dtstart, title, variant, allRounds, bothcol, cadence, nbRounds) " +
           "VALUES " +
-        "(" + t.dtstart + ", ?, '" + t.website + "'," + !!t.allRounds + "," +
+        "(" + t.dtstart + ",?,?," + !!t.allRounds + "," +
             !!t.bothcol + ",'" + t.cadence  + "'," + t.nbRounds + ")";
-      db.run(query, t.title, function(err) {
+      db.run(query, t.title, t.variant, function(err) {
         cb(err, { id: this.lastID });
       });
     });
@@ -88,7 +83,7 @@ const TournamentModel = {
         "UPDATE Tournaments " +
         "SET dtstart = " + t.dtstart +
         ", title = '" + t.title + "'" +
-        ", website = '" + t.website + "'" +
+        ", variant = '" + t.variant + "'" +
         ", bothcol = " + !!t.bothcol +
         ", allRounds = " + !!t.allRounds +
         ", cadence = '" + t.cadence + "'" +

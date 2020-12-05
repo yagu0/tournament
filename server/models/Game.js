@@ -25,6 +25,7 @@ const allowedScores = [
 ];
 
 const GameModel = {
+
   checkGame: function(g) {
     return (
       [g.tid, g.round, g.player1, g.player2].every(
@@ -91,6 +92,7 @@ const GameModel = {
       db.run(query, g.glink);
     });
   }
+
 };
 
 module.exports = GameModel;

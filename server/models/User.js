@@ -4,64 +4,10 @@ const params = require("../config/parameters");
 const sendEmail = require('../utils/mailer');
 
 /*
- * Structure:
- *   id: integer
- *   firstName: varchar
- *   lastName: varchar
- *   email: varchar
- *   license: varchar
- *   club: varchar
- *   loginToken: token on server only
- *   loginTime: datetime (validity)
- *   sessionToken: token in cookies for authentication
- *   notify: boolean (send email notifications 1H before tournament)
- *   active: boolean (validated by admin)
- *   created: datetime
+ * Structure: imported from vchess/User model
  */
 
 const UserModel = {
-  checkUser: function(o) {
-    return (
-      [o.firstName, o.lastName].every(name => {
-        return (
-          !!name &&
-          !!name.match(/^[a-zA-ZáàâäãåçéèêëíìîïñóòôöõúùûüýÿæœÁÀÂÄÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸÆŒ'-]+$/)
-        );
-      }) &&
-      UserModel.checkEmail(o.email) &&
-      (
-        !o.club ||
-        !!o.club.match(/^[\wáàâäãåçéèêëíìîïñóòôöõúùûüýÿæœÁÀÂÄÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸÆŒ' -]+$/)
-      ) &&
-      (!o.license || !!o.license.match(/^[\w-]+$/))
-    );
-  },
-
-  checkEmail: function(email) {
-    return (!!email && !!email.match(/^[\w.+-]+@[\w.+-]+$/));
-  },
-
-  create: function(u, cb) {
-    db.serialize(function() {
-      let query =
-        "INSERT INTO Users " +
-        "(firstName, lastName, email, notify, created";
-      if (!!u.license) query += ", license";
-      if (!!u.club) query += ", club";
-      query += ")";
-      query +=
-        "VALUES " +
-        "('" +
-          u.firstName + "','" + u.lastName + "','" + u.email + "'," +
-          !!u.notify + "," + Date.now();
-      if (!!u.license) query += ",'" + u.license + "'";
-      if (!!u.club) query += ",'" + u.club + "'";
-      query += ")";
-      db.run(query, function(err) {
-        cb(err, { id: this.lastID });
-      });
-    });
-  },
 
   // Find one user by email or token
   getOne: function(by, value, cb, fields) {
@@ -89,7 +35,7 @@ const UserModel = {
   getAll: function(cb) {
     db.serialize(function() {
       const query =
-        "SELECT id, firstName, lastName, club, license, active " +
+        "SELECT id, name " +
         "FROM Users";
       db.all(query, cb);
     });
@@ -137,23 +83,9 @@ const UserModel = {
     db.serialize(function() {
       const query =
         "UPDATE Users " +
-        "SET firstName = '" + user.firstName + "'" +
-        ", lastName = '" + user.lastName + "'" +
-        ", email = '" + user.email + "'" +
-        ", club = '" + user.club + "'" +
-        ", license = '" + user.license + "'" +
+        "SET email = '" + user.email + "'" +
         ", notify = " + !!user.notify + " " +
         "WHERE id = " + user.id;
-      db.run(query);
-    });
-  },
-
-  toggleActive: function(id, active) {
-    db.serialize(function() {
-      const query =
-        "UPDATE Users " +
-        "SET active = " + active + " " +
-        "WHERE id = " + id;
       db.run(query);
     });
   },
@@ -163,7 +95,7 @@ const UserModel = {
 
   notify: function(user, message) {
     const subject = "tournament - notification";
-    const body = "Hello " + user.firstName + " " + user.lastName + " !" + `
+    const body = "Hello " + user.name + " !" + `
 ` + message;
     sendEmail(params.mail.noreply, user.email, subject, body);
   },
@@ -171,43 +103,12 @@ const UserModel = {
   tryNotify: function(id, message) {
     UserModel.getOne("id", id, (err,user) => {
       if (!err && user.notify) UserModel.notify(user, message);
-    }, "firstName, lastName, email");
+    }, "name, email");
   },
 
   ////////////
-  // CLEANING
+  // SYNC USERS WITH VCHESS: manually, before tournament
 
-  cleanUsersDb: function() {
-    const tsNow = Date.now();
-    // 86400000 = 24 hours in milliseconds
-    const day = 86400000;
-    db.serialize(function() {
-      const query =
-        "SELECT id, sessionToken, created, email, firstName, lastName " +
-        "FROM Users";
-      db.all(query, (err, users) => {
-        let toRemove = [];
-        users.forEach(u => {
-          // Remove users unlogged for > 24h
-          if (!u.sessionToken && tsNow - u.created > day)
-          {
-            toRemove.push(u.id);
-            UserModel.notify(
-              u,
-              "Your account has been deleted because " +
-              "you didn't log in for 24h after registration"
-            );
-          }
-        });
-        if (toRemove.length > 0) {
-          db.run(
-            "DELETE FROM Users " +
-            "WHERE id IN (" + toRemove.join(",") + ")"
-          );
-        }
-      });
-    });
-  },
 };
 
 module.exports = UserModel;

@@ -1,0 +1,4 @@
+Before tournament, trigger manually:
+for each vchess user, check if ID present in tournament.sqlite
+If yes, check username, if changed, alter in DB.
+If no, create user (copy).

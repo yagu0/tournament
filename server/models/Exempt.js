@@ -8,6 +8,7 @@ const db = require("../utils/database");
  */
 
 const ExemptModel = {
+
   checkExempt: function(e) {
     return [e.tid, e.round, e.player].every(
       elt => Number.isInteger(elt) && elt >= 1);
@@ -37,6 +38,7 @@ const ExemptModel = {
       });
     });
   }
+
 };
 
 module.exports = ExemptModel;

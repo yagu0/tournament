@@ -12,19 +12,12 @@ div
       label.modal-close(for="modalUser")
       h3.section
         span.title {{ st.tr[stage] }}
-        | (
         span.link(
-          v-if="stage!='Update'"
-          @click="toggleStage()"
-        )
-          | {{ st.tr[stage=="Login" ? "Register" : "Login"] }}
-        span.link(
-          v-else
+          v-if="stage=='Update'"
           @click="doLogout()"
         )
           | {{ st.tr["Logout"] }}
-        img(src="../assets/rightArrow.svg")
-        | )
+          img(src="../assets/rightArrow.svg")
       div(@keyup.enter="onSubmit()")
         fieldset
           label(for="u_useremail") {{ st.tr["Email"] }} *
@@ -32,37 +25,12 @@ div
             type="email"
             v-model="user.email"
           )
-        div(v-show="stage!='Login'")
-          fieldset
-            label(for="u_firstname") {{ st.tr["First name"] }} *
-            input#u_firstname(
-              type="text"
-              v-model="user.firstName"
-            )
-          fieldset
-            label(for="u_lastname") {{ st.tr["Last name"] }} *
-            input#u_lastname(
-              type="text"
-              v-model="user.lastName"
-            )
-          fieldset
-            label(for="u_club") {{ st.tr["Club"] }}
-            input#u_club(
-              type="text"
-              v-model="user.club"
-            )
-          fieldset
-            label(for="u_license") {{ st.tr["License"] }}
-            input#u_license(
-              type="text"
-              v-model="user.license"
-            )
-          fieldset
-            label(for="notifyNew") {{ st.tr["Notifications by email"] }}
-            input#notifyNew(
-              type="checkbox"
-              v-model="user.notify"
-            )
+        fieldset(v-show="stage=='Update'")
+          label(for="notifyNew") {{ st.tr["Notifications by email"] }}
+          input#notifyNew(
+            type="checkbox"
+            v-model="user.notify"
+          )
       button#submitBtn(@click="onSubmit()")
         | {{ st.tr[submitMessage] }}
       #dialog.text-center {{ st.tr[infoMsg] }}
@@ -70,16 +38,15 @@ div
 
 <script>
 import { store } from "@/store";
-import { checkUser, checkEmail } from "@/data/userCheck";
+import { checkEmail } from "@/data/userCheck";
 import { ajax } from "@/utils/ajax";
 import { processModalClick } from "@/utils/modalClick.js";
 export default {
   name: "my-upsert-user",
   data: function() {
     return {
-      logStage: "Login", //or Register
+      logStage: "Login", //or Update
       infoMsg: "",
-      enterTime: Number.MAX_SAFE_INTEGER, //for a basic anti-bot strategy
       st: store.state,
       user: {}
     };
@@ -93,8 +60,6 @@ export default {
       switch (this.stage) {
         case "Login":
           return "Go";
-        case "Register":
-          return "Send";
         case "Update":
           return "Apply";
       }
@@ -108,21 +73,14 @@ export default {
     trySetEnterTime: function(event) {
       if (event.target.checked) {
         this.infoMsg = "";
-        this.enterTime = Date.now();
         document.getElementById("u_useremail").focus();
         this.user = JSON.parse(JSON.stringify(this.st.user));
       }
-    },
-    toggleStage: function() {
-      // Loop login <--> register (update is for logged-in users)
-      this.logStage = this.logStage == "Login" ? "Register" : "Login";
     },
     ajaxUrl: function() {
       switch (this.stage) {
         case "Login":
           return "/sendtoken";
-        case "Register":
-          return "/register";
         case "Update":
           return "/update";
       }
@@ -132,8 +90,6 @@ export default {
       switch (this.stage) {
         case "Login":
           return "GET";
-        case "Register":
-          return "POST";
         case "Update":
           return "PUT";
       }
@@ -143,21 +99,13 @@ export default {
       switch (this.stage) {
         case "Login":
           return "Connection token sent. Check your emails!";
-        case "Register":
-          return "Registration complete! Please check your emails now";
         case "Update":
           return "Modifications applied!";
       }
       return "Never reached";
     },
     onSubmit: function() {
-      // Basic anti-bot strategy:
-      const exitTime = Date.now();
-      if (this.stage == "Register" && exitTime - this.enterTime < 5000) return;
-      let error =
-        this.stage == "Login"
-          ? checkEmail(this.user.email)
-          : checkUser(this.user);
+      let error = checkEmail(this.user.email);
       if (error) {
         alert(this.st.tr[error]);
         return;
@@ -175,7 +123,7 @@ export default {
           ),
           success: () => {
             this.infoMsg = this.infoMessage();
-            if (this.stage != "Update") this.user = {};
+            if (this.stage == "Login") this.user = {};
             else this.st.user = JSON.parse(JSON.stringify(this.user));
           },
           error: (err) => {
@@ -206,9 +154,9 @@ h3.section
     font-size: 0.8em
     text-decoration: underline
     cursor: pointer
-  img
-    height: 1em
-    padding-left: 5px
+    img
+      height: 1em
+      padding-left: 5px
 
 #submitBtn
   width: 50%

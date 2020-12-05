@@ -1,8 +1,3 @@
-const allowedWebsites = [
-  "lichess",
-  "vchess"
-];
-
 export function checkTournament(t) {
   if (!t.title)
     return "Missing title";
@@ -14,7 +9,5 @@ export function checkTournament(t) {
     return "Rounds count must be odd if all rounds";
   if (!t.cadence.match(/^[\w+ -]+$/))
     return "Wrong cadence (alphanumerics, space, '+' and '_')";
-  if (!allowedWebsites.includes(t.website))
-    return "Missing or unsupported platform";
   return "";
 }

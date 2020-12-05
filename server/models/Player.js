@@ -5,17 +5,16 @@ const db = require("../utils/database");
  *   tid: integer
  *   uid: integer
  *   elo: integer
- *   name: varchar
  *   quit: boolean
  *   ban: boolean
  */
 
 const PlayerModel = {
+
   checkPlayer: function(p) {
     return (
       !!p.tid && p.tid.toString().match(/^[0-9]+$/) &&
-      !!p.elo && p.elo.toString().match(/^[0-9]+$/) &&
-      !!p.name && !!p.name.match(/^[\w-]+$/)
+      !!p.elo && p.elo.toString().match(/^[0-9]+$/)
     );
   },
 
@@ -30,10 +29,9 @@ const PlayerModel = {
     db.serialize(function() {
       const query =
         "INSERT INTO Players " +
-        "(uid, tid, name, elo, quit) " +
+        "(uid, tid, elo, quit) " +
           "VALUES " +
-        "(" + p.uid + "," + p.tid + ",'" + p.name + "'," +
-          p.elo + "," + !!p.quit + ")";
+        "(" + p.uid + "," + p.tid + "," + p.elo + "," + !!p.quit + ")";
       db.run(query, function(err) {
         cb(err, { id: this.lastID });
       });
@@ -56,7 +54,7 @@ const PlayerModel = {
     db.serialize(function() {
       const query =
         "UPDATE Players " +
-        "SET elo = " + p.elo + ", name = '" + p.name + "' " +
+        "SET elo = " + p.elo + " " +
         "WHERE tid = " + p.tid + " AND uid = " + uid;
       db.run(query);
     });
@@ -80,6 +78,7 @@ const PlayerModel = {
       db.run(query);
     });
   }
+
 };
 
 module.exports = PlayerModel;

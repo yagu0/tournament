@@ -1,4 +1,5 @@
 module.exports = {
+
   // For mail sending. NOTE: *no trailing slash*
   siteURL: "http://localhost:8080",
 
@@ -35,4 +36,5 @@ module.exports = {
   // IDs and email of admin users
   admin: [1],
   admin_emails: ["some_email_address"]
+
 };

@@ -49,11 +49,7 @@ export default {
   },
   computed: {
     userName: function() {
-      return (
-        this.st.user.id > 0
-          ? this.st.user.firstName + " " + this.st.user.lastName
-          : "Login"
-      );
+      return (this.st.user.id > 0 ? this.st.user.name : "Login");
     }
   },
   methods: {

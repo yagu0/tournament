@@ -8,7 +8,6 @@ main
     .card
       label.modal-close(for="modalTinfos")
       #tournamentInfos
-        p {{ st.tr["Website"] }} : {{ website }}
         p {{ st.tr["Cadence"] }} : {{ tournament.cadence }}
         p {{ tournament.nbRounds }} {{ st.tr["rounds"] }}
         p(v-if="tournament.allRounds") {{ st.tr["All rounds"] }}
@@ -124,7 +123,7 @@ main
             tr
               th {{ st.tr["Name"] }}
               th {{ st.tr["Username"] }}
-              th Elo ({{ tournament.website }})
+              th Elo
               th {{ st.tr["Club"] }}
           tbody
             tr(
@@ -145,7 +144,7 @@ main
               tr
                 th Pl
                 th {{ st.tr["Username"] }}
-                th Elo ({{ tournament.website }})
+                th Elo
                 th(v-for="(r,i) in rounds") {{ "R" + (i+1) }}
                 th {{ st.tr["Score"] }}
                 th TB
@@ -282,13 +281,6 @@ export default {
     this.cleanBeforeDestroy();
   },
   computed: {
-    website: function() {
-      switch (this.tournament.website) {
-        case "lichess": return "https://lichess.org";
-        case "vchess": return "https://vchess.club";
-      }
-      return ""; //never reached
-    },
     isAdmin: function() {
       return params.admin.includes(this.st.user.id);
     }
@@ -702,12 +694,9 @@ export default {
     tryAdminEdit: function(e, p) {
       e.preventDefault();
       if (
-        this.tournament.stage >= 3 ||
-        !params.admin.includes(this.st.user.id)
+        this.tournament.stage < 3 &&
+        params.admin.includes(this.st.user.id)
       ) {
-        this.followProfileLink(p.name);
-      }
-      else {
         this.newPlayer = {
           uid: p.uid,
           name: p.name,
@@ -737,15 +726,6 @@ export default {
         this.tryActionPlayer(p, 'ban');
       }
     },
-    followProfileLink: function(name) {
-      switch (this.tournament.website) {
-        case "lichess":
-          window.open("https://lichess.org/@/" + name, "_blank");
-        case "vchess":
-          // No profile pages on vchess (just short bio)
-          break;
-      }
-    },
     tryActionPlayer: function(p, action) {
       const admin = params.admin.includes(this.st.user.id);
       const targetSelf = (this.st.user.id == p.uid);
@@ -757,9 +737,9 @@ export default {
         )
       ) {
         // Too late, or "unauthorized" user, or admin && too early
-        this.followProfileLink(p.name);
+        return;
       }
-      else if (this.tournament.stage <= 1 && (!admin || targetSelf)) {
+      if (this.tournament.stage <= 1 && (!admin || targetSelf)) {
         this.newPlayer = {
           name: p.name,
           elo: p.elo
@@ -800,21 +780,9 @@ export default {
       let opp = null;
       if (g.player1 == this.st.user.id) opp = g.player2;
       else if (g.player2 == this.st.user.id) opp = g.player1;
-      if (!!opp) {
-        switch (this.tournament.website) {
-          case "lichess":
-            window.open(
-              "https://lichess.org/?user=" +
-              this.players[opp].name + "#friend",
-              "_blank"
-            );
-            break;
-          case "vchess":
-            // No individual challenge link: just redirect to hall
-            window.open("https://vchess.club", "_blank");
-            break;
-        }
-      }
+      if (!!opp)
+        // TODO: adjust challenge link!
+        window.open("https://vchess.club", "_blank");
     },
     roundCompleted: function() {
       const L = this.rounds.length;
@@ -1241,8 +1209,6 @@ export default {
       );
       this.curGame = {};
     },
-    // TODO: game links could be modified even after the tournament ends
-    // (by anyone ? Just admin ?)
     setGamelink: function() {
       document.getElementById("modalGamelink").checked = false;
       ajax(

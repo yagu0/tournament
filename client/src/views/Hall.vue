@@ -20,11 +20,6 @@ main
             type="text"
             v-model="newtour.title")
         fieldset
-          label(for="t_website") {{ st.tr["Platform"] }}
-          select#t_website(v-model="newtour.website")
-            option(value="lichess") lichess.org
-            option(value="vchess") vchess.club
-        fieldset(v-show="newtour.website == 'vchess'")
           label(for="t_variant") {{ st.tr["Variant"] }}
           input#t_variant(
             type="text"
@@ -171,7 +166,6 @@ export default {
       this.newtour = {
         dtstart: new Date().toISOString().slice(0, -8),
         title: "Tournament title",
-        website: "lichess",
         bothcol: false,
         allRounds: false,
         cadence: "3+2",
