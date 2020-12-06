@@ -29,7 +29,7 @@ const UserModel = {
   getByIds: function(ids, cb) {
     db.serialize(function() {
       const query =
-        "SELECT id, firstName, lastName, club " +
+        "SELECT id, name " +
         "FROM Users " +
         "WHERE id IN (" + ids + ")";
       db.all(query, cb);

@@ -25,14 +25,11 @@ var server = http.createServer(app);
  * CRON tasks
  */
 
-let cron = require('node-cron');
-const UserModel = require("../models/User");
+//let cron = require('node-cron');
 // TODO: also notify "tournament in 1 hour" (by email)
-cron.schedule('0 0 0 * * *', function() {
-  // Remove unlogged users every 24h
-  // (TODO: also un-activated users every week?)
-  UserModel.cleanUsersDb();
-});
+//cron.schedule('0 0 0 * * *', function() {
+  // Nothing for now...
+//});
 
 /**
  * Listen on provided port, on all network interfaces.
