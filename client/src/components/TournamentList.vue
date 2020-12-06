@@ -4,8 +4,8 @@ div
     thead
       tr
         th {{ st.tr["Title"] }}
+        th {{ st.tr["Variant"] }}
         th {{ st.tr["Cadence"] }}
-        th {{ st.tr["Rounds count"] }}
         th {{ st.tr["Start time"] }}
     tbody
       tr(
@@ -15,8 +15,8 @@ div
         @contextmenu="tryEmitDelete($event, t.id)"
       )
         td {{ t.title }}
+        td {{ t.variant }}
         td {{ t.cadence }}
-        td {{ t.nbRounds }}
         td {{ timestamp2datetime(t.dtstart) }}
   p(v-else)
     | {{ st.tr["No tournaments found :("] }}
