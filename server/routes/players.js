@@ -7,15 +7,10 @@ const UserModel = require("../models/User");
 router.post("/players", access.logged, access.ajax, (req,res) => {
   let player = req.body.player;
   if (PlayerModel.checkPlayer(player)) {
-    // User must be active (late check)
-    UserModel.getOne("id", req.userId, (err, user) => {
-      if (!!user.active) {
-        player.uid = req.userId;
-        PlayerModel.create(player, (err, ret) => {
-          res.json(err || ret);
-        });
-      }
-    }, "active");
+    player.uid = req.userId;
+    PlayerModel.create(player, (err, ret) => {
+      res.json(err || ret);
+    });
   }
 });
 
