@@ -33,8 +33,7 @@ module.exports = {
     contact: "some_contact_email",
   },
 
-  // IDs and email of admin users
-  admin: [1],
-  admin_emails: ["some_email_address"]
+  // IDs of admin users
+  admin: [1]
 
 };
