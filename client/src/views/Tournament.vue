@@ -8,6 +8,7 @@ main
     .card
       label.modal-close(for="modalTinfos")
       #tournamentInfos
+        p {{ st.tr["Variant"] }} : {{ tournament.variant }}
         p {{ st.tr["Cadence"] }} : {{ tournament.cadence }}
         p {{ tournament.nbRounds }} {{ st.tr["rounds"] }}
         p(v-if="tournament.allRounds") {{ st.tr["All rounds"] }}
@@ -19,9 +20,6 @@ main
   )
     .card
       label.modal-close(for="modalJoin")
-      fieldset
-        label(for="joinName") {{ st.tr["Username"] }}
-        input#joinName(type="text" v-model="newPlayer.name")
       fieldset
         label(for="joinElo") {{ st.tr["Known rating"] }}
         input#joinElo(
@@ -116,15 +114,11 @@ main
           onClick="window.doClick('modalJoin')"
         )
           | {{ st.tr["Join"] }}
-        p#warnInactive(v-else-if="inactiveAndEarlyStage()")
-          | {{ st.tr["Your account isn't activated yet. Please reload this page later"] }}
         table
           thead
             tr
-              th {{ st.tr["Name"] }}
               th {{ st.tr["Username"] }}
               th Elo
-              th {{ st.tr["Club"] }}
           tbody
             tr(
               v-for="p in sortedPlayers()"
@@ -133,10 +127,8 @@ main
               @contextmenu="tryShowDeleteBox($event,p)"
               :class="{quit: p.quit, ban: p.ban}"
             )
-              td {{ p.lastName.toUpperCase() + " " + p.firstName }}
               td {{ p.name }}
               td {{ p.elo }}
-              td {{ p.club }}
       div(v-show="display=='tournament'")
         div(v-if="tournament.stage == 4")
           table(v-if="!!finalGrid")
@@ -179,6 +171,8 @@ main
                 v-for="g in rounds[rounds.length-1]"
                 :class="{ 'my-pairing': isMyGame(g) }"
               )
+                // TODO: should be "challengeOpp", not "try",
+                // checking if "isMyGame" first (and our line appear on top?)
                 td(@click="tryChallengeOpp(g)") {{ nameAndScore(g.player1) }}
                 td(@click="tryChallengeOpp(g)") {{ nameAndScore(g.player2) }}
                 td(@click="tryShowModalScore(g)") {{ g.score || "*" }}
@@ -296,7 +290,7 @@ export default {
     },
     showJoinButton: function() {
       return (
-        this.st.user.id > 0 && !!this.st.user.active &&
+        this.st.user.id > 0 &&
         !Object.keys(this.players).includes(this.st.user.id.toString()) &&
         this.tournament.stage <= 1 &&
         (
@@ -324,9 +318,6 @@ export default {
         this.conn.removeEventListener("message", this.socketMessageListener);
         this.conn = null;
       }
-    },
-    inactiveAndEarlyStage: function() {
-      return this.tournament.stage <= 1 && !this.st.user.active;
     },
     nextStageText: function() {
       switch (this.tournament.stage) {
@@ -433,8 +424,7 @@ export default {
             {
               data: { ids: uids },
               success: (res) => {
-                res.users.forEach(u =>
-                  chatIds[u.id] = u.firstName + "_" + u.lastName.charAt(0));
+                res.users.forEach(u => chatIds[u.id] = u.name);
                 this.chats.forEach(
                   c => { if (!!chatIds[c.uid]) c.name = chatIds[c.uid]; });
                 this.$refs["chatcomp"].$forceUpdate();
@@ -468,27 +458,16 @@ export default {
                       success: (res3) => {
                         // User IDs may not appear in the same order
                         let users = {};
-                        res3.users.forEach(u => {
-                          users[u.id] = {
-                            firstName: u.firstName,
-                            lastName: u.lastName,
-                            club: u.club
-                          };
-                        });
+                        res3.users.forEach(u => { users[u.id] = u.name; });
                         res2.players.forEach(p => {
                           this.$set(this.players, p.uid,
-                            Object.assign(
-                              {
-                                name: p.name,
-                                elo: p.elo,
-                                quit: p.quit,
-                                ban: p.ban
-                              },
-                              users[p.uid]
-                            )
+                            {
+                              name: users[p.uid],
+                              elo: p.elo,
+                              quit: p.quit,
+                              ban: p.ban
+                            }
                           );
-                          if (p.uid == this.st.user.id)
-                            this.st.user.name = p.name;
                         });
                         playersRetrieved = true;
                         if (chatsRetrieved) fillChatNames();
@@ -560,11 +539,7 @@ export default {
         Object.keys(this.players)
         .filter(uid => uid != this.st.user.id)
         .map(uid => Object.assign({ uid: uid }, this.players[uid]))
-        .sort((p1,p2) => {
-          const compL = p1.lastName.localeCompare(p2.lastName);
-          if (compL != 0) return compL;
-          return p1.firstName.localeCompare(p2.firstName);
-        });
+        .sort((p1,p2) => { p1.name.localeCompare(p2.name); });
       if (!this.st.user.id || !this.players[this.st.user.id])
         // I'm not playing
         return allButMe;
@@ -593,7 +568,7 @@ export default {
       document.getElementById("modalJoin").checked = false;
       this.newPlayer.id  = this.newPlayer.uid || this.st.user.id;
       if (Object.keys(this.players).some(k => k == this.newPlayer.id)) {
-        // Edit mode: elo and/or (user) name may have changed
+        // Edit mode: elo may have changed
         this.$set(this.players, this.newPlayer.id,
           Object.assign(this.players[this.newPlayer.id], this.newPlayer));
         ajax(
@@ -613,12 +588,9 @@ export default {
         return;
       }
       if (
-        !this.st.user.active ||
-        (
-          this.tournament.allRounds &&
-          Object.values(this.players).filter(v => !v.ban).length
-            == this.tournament.nbRounds + 1
-        )
+        this.tournament.allRounds &&
+        Object.values(this.players).filter(v => !v.ban).length
+          == this.tournament.nbRounds + 1
       ) {
         return;
       }
@@ -635,11 +607,7 @@ export default {
           success: (res) => {
             this.$set(this.players, this.st.user.id,
               Object.assign(
-                {
-                  firstName: this.st.user.firstName,
-                  lastName: this.st.user.lastName,
-                  club: this.st.user.club
-                },
+                { name: this.st.user.name },
                 newPlayer
               )
             );
@@ -653,9 +621,7 @@ export default {
             Object.assign(
               {
                 uid : this.st.user.id,
-                firstName: this.st.user.firstName,
-                lastName: this.st.user.lastName,
-                club: this.st.user.club
+                name: this.st.user.name
               },
               newPlayer
             )
@@ -697,9 +663,9 @@ export default {
         this.tournament.stage < 3 &&
         params.admin.includes(this.st.user.id)
       ) {
+        // No need for player name: already in this.players
         this.newPlayer = {
           uid: p.uid,
-          name: p.name,
           elo: p.elo
         };
         doClick("modalJoin");
@@ -740,10 +706,8 @@ export default {
         return;
       }
       if (this.tournament.stage <= 1 && (!admin || targetSelf)) {
-        this.newPlayer = {
-          name: p.name,
-          elo: p.elo
-        };
+        // No need for name: self-join
+        this.newPlayer = { elo: p.elo };
         doClick("modalJoin");
       }
       else {
@@ -777,12 +741,24 @@ export default {
       }
     },
     tryChallengeOpp: function(g) {
-      let opp = null;
-      if (g.player1 == this.st.user.id) opp = g.player2;
-      else if (g.player2 == this.st.user.id) opp = g.player1;
-      if (!!opp)
-        // TODO: adjust challenge link!
-        window.open("https://vchess.club", "_blank");
+      let opp = null,
+          color = '';
+      if (g.player1 == this.st.user.id) {
+        opp = g.player2;
+        color = 'w';
+      }
+      else if (g.player2 == this.st.user.id) {
+        opp = g.player1;
+        color = 'b';
+      }
+      if (!!opp) {
+        const queryString =
+          "challenge=" + opp + "&" +
+          "color=" + color + "&" +
+          "variant=" + this.tournament.variant + "&" +
+          "cadence=" + this.tournament.cadence;
+        window.open("https://vchess.club?" + queryString, "_blank");
+      }
     },
     roundCompleted: function() {
       const L = this.rounds.length;
@@ -1367,10 +1343,6 @@ h4
 .center-btn
   display: block
   margin: 0 auto
-
-#warnInactive
-  text-align: center
-  font-style: italic
 
 #endRoundAction
   text-align: center

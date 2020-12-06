@@ -29,18 +29,11 @@ export default {
   methods: {
     classObject: function(chat) {
       return {
-        "my-chatmsg": (
-          !!this.st.user.firstName &&
-          (
-            chat.name == this.st.user.name ||
-            chat.name == this.st.user.firstName + "_" +
-              this.st.user.lastName.charAt(0).toUpperCase()
-          )
-        )
+        "my-chatmsg": !!this.st.user.name && chat.name == this.st.user.name
       };
     },
     sendChat: function() {
-      if (!this.st.user.firstName) {
+      if (!this.st.user.name) {
         alert("Only registered users can chat");
         return;
       }
@@ -51,13 +44,7 @@ export default {
       chatInput.value = "";
       const chat = {
         msg: chatTxt,
-        name: (
-          this.st.user.name ||
-          (
-            this.st.user.firstName + "_" +
-            this.st.user.lastName.charAt(0).toUpperCase()
-          )
-        )
+        name: this.st.user.name
       };
       this.$emit("mychat", chat);
       this.chats.unshift(chat);

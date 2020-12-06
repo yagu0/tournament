@@ -1,7 +1,4 @@
-Remove menu: only "Tournaments" left.
-But "Login" + "Language" in upper right corner remain.
-New tournament: variant field, missing translation,
-                and should be drop-down (copy from vchess.sqlite)
+New tournament: variant field should be drop-down (copy from vchess.sqlite)
 
 Email notifications 1h before tournament
 (Also email notification when a new tournament is created?)

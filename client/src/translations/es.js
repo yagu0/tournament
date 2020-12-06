@@ -86,6 +86,7 @@ export const translations = {
   "Username": "Apodo",
   Users: "Usuarios",
   Validate: "Validar",
+  Variant: "Variante",
   View: "Mirar",
   "Withdraw from tournament?": "¿Retirarse del torneo?",
   "Wrong time control": "Cadencia incorrecta",

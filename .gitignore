@@ -1,11 +1,12 @@
 # Various files
-/server/db/tournament.sqlite
+/server/db/tournament.sqlite*
 /server/config/parameters.js
 /server/fallback/*
 !/server/fallback/README
 /client/dist/*
 !/client/dist/.gitkeep
 /client/src/parameters.js
+/sync_users.py
 
 # Dependency directories#
 node_modules/
@@ -32,4 +33,3 @@ npm-debug.log*
 *.pyc
 *.csv
 __pycache__/
-!tournament_sample.csv

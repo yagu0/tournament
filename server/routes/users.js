@@ -34,7 +34,7 @@ router.get("/users", access.ajax, (req,res) => {
 
 router.put('/update', access.logged, access.ajax, (req,res) => {
   let user = req.body.user;
-  if (UserModel.checkUser(user)) {
+  if (UserModel.checkEmail(user.email)) {
     user.id = req.userId; //in case of
     UserModel.updateSettings(user);
     res.json({});
@@ -49,7 +49,7 @@ function setAndSendLoginToken(subject, to) {
   const token = genToken(params.token.length);
   UserModel.setLoginToken(token, to.id);
   let body =
-    "Hello " + to.firstName + " " + to.lastName + " !" + `
+    "Hello " + to.name + " !" + `
 ` +
     "Access your account here: " +
     params.siteURL + "/#/authenticate/" + token + `

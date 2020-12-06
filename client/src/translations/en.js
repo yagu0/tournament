@@ -87,6 +87,7 @@ export const translations = {
   "Username": "Username",
   Users: "Users",
   Validate: "Validate",
+  Variant: "Variant",
   View: "View",
   "Withdraw from tournament?": "Withdraw from tournament?",
   "Wrong time control": "Wrong time control",

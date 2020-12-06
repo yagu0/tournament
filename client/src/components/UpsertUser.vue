@@ -2,7 +2,7 @@
 div
   input#modalUser.modal(
     type="checkbox"
-    @change="trySetEnterTime($event)"
+    @change="enterUserForm($event)"
   )
   #upsertDiv(
     role="dialog"
@@ -70,7 +70,7 @@ export default {
     }
   },
   methods: {
-    trySetEnterTime: function(event) {
+    enterUserForm: function(event) {
       if (event.target.checked) {
         this.infoMsg = "";
         document.getElementById("u_useremail").focus();

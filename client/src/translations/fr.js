@@ -91,6 +91,7 @@ export const translations = {
   "Username": "Pseudo",
   Users: "Utilisateurs",
   Validate: "Valider",
+  Variant: "Variante",
   View: "Voir",
   "Withdraw from tournament?": "Sortir du tournoi ?",
   "Wrong time control": "Cadence erronée",

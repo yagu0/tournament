@@ -2,17 +2,13 @@
 
 create table Users (
   id integer primary key,
-  firstName varchar,
-  lastName varchar,
+  name varchar,
   email varchar unique,
-  license varchar unique,
-  club varchar,
   loginToken varchar,
   loginTime datetime,
   sessionToken varchar,
-  notify boolean,
   created datetime,
-  active boolean
+  notify boolean
 );
 
 create table Tournaments (
@@ -40,7 +36,6 @@ create table Chats (
 create table Players (
   uid integer,
   tid integer,
-  name varchar,
   elo integer,
   quit boolean,
   ban boolean,

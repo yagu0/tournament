@@ -9,6 +9,10 @@ const sendEmail = require('../utils/mailer');
 
 const UserModel = {
 
+  checkEmail: function(email) {
+    return (!!email && !!(email.match(/^[\w.+-]+@[\w.+-]+$/)));
+  },
+
   // Find one user by email or token
   getOne: function(by, value, cb, fields) {
     // TODO: all possible values are strings now

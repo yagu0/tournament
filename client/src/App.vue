@@ -16,8 +16,6 @@
             #leftMenu
               router-link(to="/")
                 | {{ st.tr["Tournaments"] }}
-              router-link(to="/users")
-                | {{ st.tr["Users"] }}
             #rightMenu
               .clickable(onClick="window.doClick('modalUser')") {{ userName }}
               .clickable(onClick="doClick('modalLang')")
