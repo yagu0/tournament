@@ -16,12 +16,14 @@ export default {
     content: function() {
       // (AJAX) Request to get FAQ content (plain text, HTML)
       return (
-        require("raw-loader!@/translations/faq/" + this.st.lang + ".pug")
+        require(
+          "raw-loader!@/translations/faq/" + this.st.lang + ".pug"
+        ).default
         // Next two lines fix a weird issue after last update (2019-11)
         .replace(/\\n/g, " ")
         .replace(/\\"/g, '"')
-        .replace('module.exports = "', "")
-        .replace(/"$/, "")
+        .replace('export default "', "")
+        .replace(/";$/, "")
       );
     }
   },
