@@ -48,3 +48,5 @@ def sync_tournament():
 
     tconn.commit()
     vcur.close()
+
+sync_tournament()
