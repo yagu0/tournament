@@ -5,31 +5,11 @@
 #   if yes, check username, and if changed, alter in DB.
 #   if no, create user (copy).
 
-import sqlite3
-from sqlite3 import Error
-
-vchess_db_path = "path_to_vchess_DB_file"
-tournament_db_path = "path_to_tournament_DB_file"
-
-def create_connection(db_file):
-    """
-    Create a database connection to the vchess SQLite database
-    :param db_file: database file
-    :return: Connection object or None
-    """
-
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-    except Error as e:
-        print(e)
-
-    return conn
+from dbconnect import create_connection, vchess_db_path, tournament_db_path
 
 def sync_tournament():
     """
     Synchronize tournament/Users table from vchess/Users
-    :return:
     """
 
     vconn = create_connection(vchess_db_path)

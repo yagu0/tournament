@@ -6,7 +6,7 @@
 /client/dist/*
 !/client/dist/.gitkeep
 /client/src/parameters.js
-/sync_users.py
+/dbsync/dbconnect.py
 
 # Dependency directories#
 node_modules/
