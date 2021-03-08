@@ -757,7 +757,7 @@ export default {
           "color=" + color + "&" +
           "variant=" + this.tournament.variant + "&" +
           "cadence=" + this.tournament.cadence;
-        window.open("https://vchess.club?" + queryString, "_blank");
+        window.open("https://vchess.club/#/?" + queryString, "_blank");
       }
     },
     roundCompleted: function() {
