@@ -744,11 +744,11 @@ export default {
       let opp = null,
           color = '';
       if (g.player1 == this.st.user.id) {
-        opp = g.player2;
+        opp = this.players[g.player2].name;
         color = 'w';
       }
       else if (g.player2 == this.st.user.id) {
-        opp = g.player1;
+        opp = this.players[g.player1].name;
         color = 'b';
       }
       if (!!opp) {
