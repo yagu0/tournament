@@ -24,7 +24,7 @@ def sync_tournament():
         tuser = tcur.fetchone()
         tcur.close()
         if tuser == None:
-            tconn.cursor().execute("INSERT INTO Users(id,name,email,created,notify) VALUES (?,?,?,?,?)", vuser)
+            tconn.cursor().execute("INSERT INTO Users (id,name,email,created,notify) VALUES (?,?,?,?,?)", vuser)
         elif tuser[0] != vuser[1]:
             tconn.cursor().execute("UPDATE Users SET name = ? WHERE id = ?", (vuser[1],vuser[0]))
 
