@@ -695,18 +695,11 @@ export default {
     tryActionPlayer: function(p, action) {
       const admin = params.admin.includes(this.st.user.id);
       const targetSelf = (this.st.user.id == p.uid);
-      if (
-        this.tournament.stage == 4 ||
-        (
-          !targetSelf &&
-          (!admin || this.tournament.stage <= 1)
-        )
-      ) {
-        // Too late, or "unauthorized" user, or admin && too early
+      if (this.tournament.stage == 4 || (!targetSelf && !admin))
+        // Tournament is over, or unauthorized
         return;
-      }
-      if (this.tournament.stage <= 1 && (!admin || targetSelf)) {
-        // No need for name: self-join
+      if (this.tournament.stage <= 1 && targetSelf) {
+        // No need for name: self join
         this.newPlayer = { elo: p.elo };
         doClick("modalJoin");
       }

@@ -16,7 +16,7 @@ export function maxWeightMatching(edges, cb) {
   pinput = pinput.slice(0, -1) + "]";
   ajax(
     "/compute_pairing",
-    "GET",
+    "POST",
     {
       credentials: true,
       data: { edges: pinput },

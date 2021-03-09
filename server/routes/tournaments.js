@@ -33,16 +33,18 @@ router.get("/tournaments", access.ajax, (req,res) => {
 });
 
 // Temporary: compute pairings on server (TODO: in browser instead)
+const fs = require('fs');
 const { exec } = require('child_process');
-router.get("/compute_pairing", access.logged, access.ajax, (req,res) => {
-  const edges = req.query["edges"];
+router.post("/compute_pairing", access.logged, access.ajax, (req,res) => {
+  const edges = req.body["edges"];
   if (
     params.admin.includes(req.userId) &&
     !!edges.match(/^\[(\([0-9.,-]+\),?)+\]$/)
   ) {
+    fs.writeFile('edges.txt', edges, () => {});
     const cmd =
       'python -c "from mwmatching3 import maxWeightMatching;' +
-      'print(maxWeightMatching(' + edges + ',maxcardinality=True))"';
+      'print(maxWeightMatching(maxcardinality=True))"';
     exec(cmd, { cwd: "./" }, (err, stdout, stderr) => {
       res.json({ assignment: stdout });
     });

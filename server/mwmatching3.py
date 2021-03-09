@@ -4,7 +4,11 @@
 # Commented out unit tests and moved globals into main function.
 #***************************
 
-def maxWeightMatching(edges, maxcardinality=False):
+import ast
+
+def maxWeightMatching(maxcardinality=False):
+    edgesFile = open("edges.txt", "r")
+    edges = ast.literal_eval(edgesFile.read())
     if not edges:
         return [ ]
     nedge = len(edges)
