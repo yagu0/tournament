@@ -92,6 +92,7 @@ import { checkTournament } from "@/data/tournamentCheck";
 import { processModalClick } from "@/utils/modalClick.js";
 import params from "@/parameters";
 import { getRandString } from "@/utils/alea";
+import { ArrayFun } from "@/utils/array";
 import TournamentList from "@/components/TournamentList.vue";
 export default {
   name: "my-hall",
