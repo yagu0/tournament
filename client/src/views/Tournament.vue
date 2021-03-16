@@ -367,7 +367,7 @@ export default {
           // Tournament running or completed: focus on tournament
           this.display = "tournament";
         const now = Math.round(Date.now() / 1000);
-        if (tournament.stage <= 2 && now < this.tournament.dtstart) {
+        if (this.tournament.stage <= 2 && now < this.tournament.dtstart) {
           this.$nextTick(
             () => {
               countdown = this.tournament.dtstart - now;
