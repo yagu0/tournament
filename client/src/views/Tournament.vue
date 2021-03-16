@@ -751,7 +751,7 @@ export default {
           "challenge=" + opp + "&" +
           "color=" + color + "&" +
           "variant=" + this.tournament.variant + "&" +
-          "cadence=" + this.tournament.cadence;
+          "cadence=" + this.tournament.cadence.replace('+', '%2B');
         window.open("https://vchess.club/#/?" + queryString, "_blank");
       }
     },
