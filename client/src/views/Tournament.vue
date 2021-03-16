@@ -77,9 +77,11 @@ main
       fieldset
         label(for="scoreF") {{ st.tr["Score (forfeit)"] }}
         .button-group#scoreF(@click="setScore($event)")
-          button.white-win 1-F
+          button.white-win(v-if="!tournament.bothcol") 1-F
+          button.white-win(v-else) 2-F
           button.draw F-F
-          button.black-win F-1
+          button.black-win(v-if="!tournament.bothcol") F-1
+          button.black-win(v-else) F-2
   .row
     #aboveTour.col-sm-12
       h4#tournamentTitle(onClick="window.doClick('modalTinfos')")
@@ -815,6 +817,8 @@ export default {
           case "0-1": return [0, 1];
           case "1-F": return [1, 0];
           case "F-1": return [0, 1];
+          case "2-F": return [2, 0];
+          case "F-2": return [0, 2];
           case "F-F": return [0, 0];
           case "+2": return [2, 0];
           case "+1": return [1.5, 0.5];
@@ -1020,6 +1024,8 @@ export default {
           case "-2": return (c == 'W' ? '--' : '++');
           case "1-F": return (c == 'W' ? '>' : '<');
           case "F-1": return (c == 'W' ? '<' : '>');
+          case "2-F": return (c == 'W' ? '>>' : '<<');
+          case "F-2": return (c == 'W' ? '<<' : '>>');
           case "F-F": return '<';
         }
         return ""; //never reached
