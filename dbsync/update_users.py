@@ -20,13 +20,16 @@ def sync_tournament():
 
     for vuser in vrows:
         tcur = tconn.cursor()
-        tcur.execute("SELECT name FROM Users WHERE id = ?", (vuser[0],))
+        tcur.execute("SELECT name,email FROM Users WHERE id = ?", (vuser[0],))
         tuser = tcur.fetchone()
         tcur.close()
         if tuser == None:
             tconn.cursor().execute("INSERT INTO Users (id,name,email,created,notify) VALUES (?,?,?,?,?)", vuser)
-        elif tuser[0] != vuser[1]:
-            tconn.cursor().execute("UPDATE Users SET name = ? WHERE id = ?", (vuser[1],vuser[0]))
+        else
+            if tuser[0] != vuser[1]:
+                tconn.cursor().execute("UPDATE Users SET name = ? WHERE id = ?", (vuser[1],vuser[0]))
+            if tuser[1] != vuser[2]:
+                tconn.cursor().execute("UPDATE Users SET email = ? WHERE id = ?", (vuser[2],vuser[0]))
 
     tconn.commit()
     vcur.close()
