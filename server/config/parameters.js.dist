@@ -3,6 +3,9 @@ module.exports = {
   // For mail sending. NOTE: *no trailing slash*
   siteURL: "http://localhost:8080",
 
+  // Path to code folder
+  pathToCode: "/absolute/path/to/tournament",
+
   // To know in which environment the code run
   env: process.env.NODE_ENV || 'development',
   

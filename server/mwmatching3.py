@@ -7,7 +7,7 @@
 import ast
 
 def maxWeightMatching(maxcardinality=False):
-    edgesFile = open("edges.txt", "r")
+    edgesFile = open("/tmp/edges.txt", "r")
     edges = ast.literal_eval(edgesFile.read())
     if not edges:
         return [ ]
