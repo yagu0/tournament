@@ -83,13 +83,12 @@ const UserModel = {
     });
   },
 
-  updateSettings: function(user) {
+  updateSettings: function(id, notify) {
     db.serialize(function() {
       const query =
         "UPDATE Users " +
-        "SET email = '" + user.email + "'" +
-        ", notify = " + !!user.notify + " " +
-        "WHERE id = " + user.id;
+        "SET notify = " + notify + " " +
+        "WHERE id = " + id;
       db.run(query);
     });
   },

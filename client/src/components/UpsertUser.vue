@@ -19,7 +19,7 @@ div
           | {{ st.tr["Logout"] }}
           img(src="../assets/rightArrow.svg")
       div(@keyup.enter="onSubmit()")
-        fieldset
+        fieldset(v-show="stage=='Login'")
           label(for="u_useremail") {{ st.tr["Email"] }} *
           input#u_useremail(
             type="email"
@@ -58,10 +58,8 @@ export default {
   computed: {
     submitMessage: function() {
       switch (this.stage) {
-        case "Login":
-          return "Go";
-        case "Update":
-          return "Apply";
+        case "Login": return "Go";
+        case "Update": return "Apply";
       }
       return "Never reached";
     },
@@ -79,19 +77,15 @@ export default {
     },
     ajaxUrl: function() {
       switch (this.stage) {
-        case "Login":
-          return "/sendtoken";
-        case "Update":
-          return "/update";
+        case "Login": return "/sendtoken";
+        case "Update": return "/update";
       }
       return "Never reached";
     },
     ajaxMethod: function() {
       switch (this.stage) {
-        case "Login":
-          return "GET";
-        case "Update":
-          return "PUT";
+        case "Login": return "GET";
+        case "Update": return "PUT";
       }
       return "Never reached";
     },
@@ -119,7 +113,7 @@ export default {
           data: (
             this.stage == "Login"
               ? { email: this.user.email }
-              : { user: this.user }
+              : { notify: this.user.notify }
           ),
           success: () => {
             this.infoMsg = this.infoMessage();

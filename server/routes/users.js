@@ -33,12 +33,8 @@ router.get("/users", access.ajax, (req,res) => {
 });
 
 router.put('/update', access.logged, access.ajax, (req,res) => {
-  let user = req.body.user;
-  if (UserModel.checkEmail(user.email)) {
-    user.id = req.userId; //in case of
-    UserModel.updateSettings(user);
-    res.json({});
-  }
+  UserModel.updateSettings(req.userId, !!req.body.notify);
+  res.json({});
 });
 
 // Authentication-related methods:
