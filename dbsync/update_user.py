@@ -12,13 +12,13 @@ def sync_tournament():
 
     vconn = create_connection(vchess_db_path)
     vcur = vconn.cursor()
-    vcur.execute("SELECT name,email FROM Users WHERE id = ?", sys.argv[1])
+    vcur.execute("SELECT name,email FROM Users WHERE id = ?", (sys.argv[1],))
     vrow = vcur.fetchone()
     vcur.close()
 
     tconn = create_connection(tournament_db_path)
     tcur = tconn.cursor()
-    tcur.execute("SELECT name,email FROM Users WHERE id = ?", sys.argv[1])
+    tcur.execute("SELECT name,email FROM Users WHERE id = ?", (sys.argv[1],))
     trow = tcur.fetchone()
     if trow[0] != vrow[0]:
         tconn.cursor().execute("UPDATE Users SET name = ? WHERE id = ?", (vuser[1],vuser[0]))

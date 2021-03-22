@@ -12,7 +12,7 @@ def sync_tournament():
 
     vconn = create_connection(vchess_db_path)
     vcur = vconn.cursor()
-    vcur.execute("SELECT name,email,created,notify FROM Users WHERE id = ?", sys.argv[1])
+    vcur.execute("SELECT name,email,created,notify FROM Users WHERE id = ?", (sys.argv[1],))
     vrow = vcur.fetchone()
     vcur.close()
 
