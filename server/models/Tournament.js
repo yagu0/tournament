@@ -93,6 +93,18 @@ const TournamentModel = {
     });
   },
 
+  lightModify: function(t) {
+    db.serialize(function() {
+      const query =
+        "UPDATE Tournaments " +
+        "SET variant = '" + t.variant + "'" +
+        ", bothcol = " + !!t.bothcol +
+        ", cadence = '" + t.cadence + "'" +
+        "WHERE id = " + t.id;
+      db.run(query);
+    });
+  },
+
   toggleState: function(tid, o) {
     db.serialize(function() {
       let newValues =

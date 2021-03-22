@@ -201,17 +201,17 @@ main
                 label(for="nextVariant") {{ st.tr["Variant"] }}
                 input#nextVariant(
                   type="text"
-                  v-model="tournament.variant")
+                  v-model="nextValues.variant")
                 br
                 label(for="nextCadence") {{ st.tr["Cadence"] }}
                 input#nextCadence(
                   type="text"
-                  v-model="tournament.cadence")
+                  v-model="nextValues.cadence")
                 br
                 label(for="nextBothcol") {{ st.tr["Two games"] }}
                 input#nextBothcol(
                   type="checkbox"
-                  v-model="tournament.bothcol")
+                  v-model="nextValues.bothcol")
             button(
               v-if="rounds.length > 0"
               @click="finishTournament()"
@@ -248,6 +248,7 @@ export default {
     return {
       st: store.state,
       tournament: {},
+      nextValues: {},
       players: {},
       chats: [],
       chatVisible: true,
@@ -455,6 +456,11 @@ export default {
           data: { id: this.$route.params["id"] },
           success: (res) => {
             this.tournament = res.tournament;
+            this.nextValues = {
+              variant: tournament.variant,
+              cadence: tournament.cadence,
+              bothcol: tournament.bothcol
+            };
             if (res.tournament.stage == 4) this.chatVisible = false;
             setSocketVars();
             ajax(
@@ -889,6 +895,24 @@ export default {
       if (n <= 1) {
         alert(this.st.tr["Not enough players"]);
         return;
+      }
+      let objDiff = {};
+      Object.keys(this.nextValues).forEach(val => {
+        if (this.nextValues[val] != this.tournament[val])
+          objDiff[val] = this.nextValues[val];
+      });
+      if (Object.keys(objDiff).length > 0) {
+        ajax(
+          "/light_tupdate",
+          "PUT",
+          {
+            data: {
+              tid: this.tournament.id,
+              tupdate: objDiff
+            }
+          }
+        );
+        this.send("tournament-update", { data: objDiff });
       }
       if (this.tournament.frozen) {
         // The results were frozen: un-freeze first
@@ -1346,6 +1370,15 @@ export default {
             this.$set(this.tournament, "stage", newState.stage);
           if (this.tournament.stage == 3) this.setDisplay('tournament');
           else if (this.tournament.stage == 4) this.computeFinalGrid();
+          break;
+        case "tournament-update": {
+          const newState = data.data;
+          if (newState.variant !== undefined)
+            this.$set(this.tournament, "variant", newState.variant);
+          if (newState.cadence !== undefined)
+            this.$set(this.tournament, "cadence", newState.cadence);
+          if (newState.bothcol !== undefined)
+            this.$set(this.tournament, "bothcol", newState.bothcol);
           break;
         }
       }

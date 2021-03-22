@@ -62,6 +62,18 @@ router.put("/tournaments", access.logged, access.ajax, (req,res) => {
   res.json({});
 });
 
+router.put("/light_tupdate", access.logged, access.ajax, (req,res) => {
+  const obj = req.body.tupdate;
+  if (
+    params.admin.includes(req.userId) &&
+    (!obj.variant || !!obj.variant.match(/^[\w]+$/)) &&
+    (!obj.cadence || !!obj.cadence.match(/^[\w+ -]+$/))
+  ) {
+    TournamentModel.lightModify(obj);
+  }
+  res.json({});
+});
+
 router.put("/toggle_state", access.logged, access.ajax, (req,res) => {
   const tid = req.body.tid;
   if (
