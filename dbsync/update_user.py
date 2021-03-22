@@ -3,6 +3,7 @@
 # Update name and/or email of a specific user
 
 from dbconnect import create_connection, vchess_db_path, tournament_db_path
+import sys
 
 def sync_tournament():
     """
