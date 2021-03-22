@@ -1371,6 +1371,7 @@ export default {
           if (this.tournament.stage == 3) this.setDisplay('tournament');
           else if (this.tournament.stage == 4) this.computeFinalGrid();
           break;
+        }
         case "tournament-update": {
           const newState = data.data;
           if (newState.variant !== undefined)
