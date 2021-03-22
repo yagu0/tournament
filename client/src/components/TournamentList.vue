@@ -54,7 +54,7 @@ export default {
         this.tournaments
         // "map" to avoid altering property (=> infinite loop)
         .map(t => t)
-        .sort((t1, t2) => t2.dtstart - t1.dtstart)
+        .sort((t1, t2) => t1.dtstart - t2.dtstart)
       );
     },
     timestamp2datetime: function(ts) {

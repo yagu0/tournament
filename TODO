@@ -1,11 +1,9 @@
-New tournament: variant field should be drop-down (copy from vchess.sqlite)
-
 Email notifications 1h before tournament
 (Also email notification when a new tournament is created?)
 Debug utils/mwmatching3.js
 The "Load more" button needs to be clicked twice (?!)
 In Tournament.vue:
- - allow to end earlier or cancel tournament (eg. if not enough players)
+ - allow to cancel tournament (eg. if not enough players)
  - allow to go back and relaunch round if mistakes
  - Audio file isn't played at new round
  - select box to look back at previous rounds?

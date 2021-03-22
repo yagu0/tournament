@@ -111,6 +111,16 @@ const TournamentModel = {
     });
   },
 
+  setNbRounds: function(tid, nbRounds) {
+    db.serialize(function() {
+      const query =
+        "UPDATE Tournaments " +
+        "SET nbRounds = " + nbRounds + " " +
+        "WHERE id = " + tid;
+      db.run(query);
+    });
+  },
+
   remove: function(id) {
     db.serialize(function() {
       const query =

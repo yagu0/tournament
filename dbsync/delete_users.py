@@ -7,7 +7,7 @@ from dbconnect import create_connection, tournament_db_path
 
 def delete_users():
     """
-    Remove users corresponding to given IDs
+    Remove users corresponding to given IDs (delete)
     """
 
     tconn = create_connection(tournament_db_path)

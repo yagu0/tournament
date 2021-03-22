@@ -194,14 +194,26 @@ main
               @click="freezeResults()"
             )
               | {{ st.tr["Freeze results"] }}
+            div(v-else-if="rounds.length < tournament.nbRounds")
+              button(@click="computePairings()")
+                | {{ st.tr["Next round"] }}
+              fieldset
+                label(for="nextVariant") {{ st.tr["Variant"] }}
+                input#nextVariant(
+                  type="text"
+                  v-model="tournament.variant")
+                br
+                label(for="nextCadence") {{ st.tr["Cadence"] }}
+                input#nextCadence(
+                  type="text"
+                  v-model="tournament.cadence")
+                br
+                label(for="nextBothcol") {{ st.tr["Two games"] }}
+                input#nextBothcol(
+                  type="checkbox"
+                  v-model="tournament.bothcol")
             button(
-              v-else-if="rounds.length < tournament.nbRounds"
-              @click="computePairings()"
-            )
-              | {{ st.tr["Next round"] }}
-            // Or 'v-if="rounds.length > 0"' for early stop:
-            button(
-              v-else
+              v-if="rounds.length > 0"
               @click="finishTournament()"
             )
               | {{ st.tr["Finish tournament"] }}
@@ -294,12 +306,12 @@ export default {
       return (
         this.st.user.id > 0 &&
         !Object.keys(this.players).includes(this.st.user.id.toString()) &&
-        this.tournament.stage <= 1 &&
         (
           !this.tournament.allRounds ||
           Object.values(this.players).filter(v => !v.ban).length
             <= this.tournament.nbRounds
         )
+        && this.tournament.stage <= 3
       );
     },
     chatBtnClick: function() {
@@ -589,6 +601,7 @@ export default {
         );
         return;
       }
+      // NOTE: redundant check, in case of.
       if (
         this.tournament.allRounds &&
         Object.values(this.players).filter(v => !v.ban).length
@@ -597,8 +610,9 @@ export default {
         return;
       }
       const earlyRegistration = (this.tournament.stage == 0);
-      const newPlayer =
-        Object.assign({ quit: earlyRegistration }, this.newPlayer);
+      const lateRegistration = (this.tournament.stage >= 2);
+      const newPlayer = Object.assign(
+        { quit: earlyRegistration, ban: lateRegistration }, this.newPlayer);
       ajax(
         "/players",
         "POST",
@@ -785,11 +799,23 @@ export default {
       this.send("tournament-state", { data: { frozen: true } });
     },
     finishTournament: function() {
+      if (this.rounds.length < this.tournament.nbRounds) {
+        if (!confirm("End tournament?")) return;
+        // Early stop: adjust nbRounds on server:
+        ajax(
+          "/early_end",
+          "PUT",
+          {
+            data: {
+              tid: this.tournament.id,
+              nbRounds: this.rounds.length
+            }
+          }
+        );
+        this.$set(this.tournament, "nbRounds", this.rounds.length);
+      }
       this.$set(this.tournament, "frozen", false);
       this.$set(this.tournament, "stage", 4);
-      //if (this.rounds.length < this.tournament.nbRounds) {
-        // Early stop: adjust nbRounds on server: TODO?
-      //}
       ajax(
         "/toggle_state",
         "PUT",
@@ -809,25 +835,25 @@ export default {
       if (!obj[field]) obj[field] = by;
       else obj[field] += by;
     },
+    scoreSymbToValues: function(score) {
+      switch (score) {
+        case "1-0": return [1, 0];
+        case "1/2": return [0.5, 0.5];
+        case "0-1": return [0, 1];
+        case "1-F": return [1, 0];
+        case "F-1": return [0, 1];
+        case "2-F": return [2, 0];
+        case "F-2": return [0, 2];
+        case "F-F": return [0, 0];
+        case "+2": return [2, 0];
+        case "+1": return [1.5, 0.5];
+        case "=": return [1, 1];
+        case "-1": return [0.5, 1.5];
+        case "-2": return [0, 2];
+      }
+      return []; //never reached
+    },
     computeScores: function() {
-      const scoreSymbToValues = (score) => {
-        switch (score) {
-          case "1-0": return [1, 0];
-          case "1/2": return [0.5, 0.5];
-          case "0-1": return [0, 1];
-          case "1-F": return [1, 0];
-          case "F-1": return [0, 1];
-          case "2-F": return [2, 0];
-          case "F-2": return [0, 2];
-          case "F-F": return [0, 0];
-          case "+2": return [2, 0];
-          case "+1": return [1.5, 0.5];
-          case "=": return [1, 1];
-          case "-1": return [0.5, 1.5];
-          case "-2": return [0, 2];
-        }
-        return []; //never reached
-      };
       // Use current rounds state to get cumulated scores:
       let L = this.rounds.length;
       if (
@@ -840,7 +866,7 @@ export default {
       for (let i=0; i<L; i++) {
         if (!!this.exempts[i]) this.increment(scores, this.exempts[i]);
         this.rounds[i].forEach(g => {
-          const sc = scoreSymbToValues(g.score);
+          const sc = this.scoreSymbToValues(g.score);
           this.increment(scores, g.player1, sc[0]);
           this.increment(scores, g.player2, sc[1]);
         });
@@ -891,8 +917,7 @@ export default {
         };
       });
       for (let i=0; i<L; i++) {
-        if (!!this.exempts[i])
-          state[this.exempts[i]].exempt++;
+        if (!!this.exempts[i]) state[this.exempts[i]].exempt++;
         else {
           this.rounds[i].forEach(g => {
             this.increment(state[g.player1].met, g.player2);
@@ -909,12 +934,10 @@ export default {
         if (this.tournament.allRounds) exempt = L - 1;
         else {
           let minScore = Infinity;
-          const multFact = (this.tournament.bothcol ? 2 : 1);
           activePlayers.forEach(k => {
             const scoreE =
               state[k].exempt +
-              (this.scores[k] + 1 - 1 / this.players[k].elo)
-                / (multFact * (L + 1));
+              (this.scores[k] + 1 - 1 / this.players[k].elo) / (2 * L + 1);
             if (scoreE < minScore) {
               minScore = scoreE;
               exempt = k;
@@ -1011,6 +1034,11 @@ export default {
       //const assignment = maxWeightMatching(edges, true);
       maxWeightMatching(edges, finishPairings);
     },
+    score2TotalPoints: function(score) {
+      if (score == "F-F") return 0;
+      if (["1-0", "0-1", "1/2", "1-F", "F-1"].includes(score)) return 1;
+      return 2;
+    },
     computeFinalGrid: function() {
       const scoreToSymbol = (score, c) => {
         switch (score) {
@@ -1026,7 +1054,7 @@ export default {
           case "F-1": return (c == 'W' ? '<' : '>');
           case "2-F": return (c == 'W' ? '>>' : '<<');
           case "F-2": return (c == 'W' ? '<<' : '>>');
-          case "F-F": return '<';
+          case "F-F": return '<>';
         }
         return ""; //never reached
       };
@@ -1035,20 +1063,25 @@ export default {
       const L = this.rounds.length;
       let met = {};
       Object.keys(this.players).forEach(uid => met[uid] = {});
+      let totalPoints = 0;
+      let totPoints = []; //per round (may be variable)
       for (let i=0; i<L; i++) {
+        let points = -1;
         this.rounds[i].forEach(g => {
           // Forfeit doesn't count:
           if (g.score.indexOf('F') == -1) {
             this.increment(met[g.player1], g.player2);
             this.increment(met[g.player2], g.player1);
           }
+          if (points <= 0) points = this.score2TotalPoints(g.score);
         });
+        totPoints.push(points);
+        totalPoints += points;
       }
       let performance = {},
           tieBreak = {};
-      const multFact = (this.tournament.bothcol ? 2 : 1);
       // TODO: 10 here is very arbitrary
-      const minP = 1 / (multFact * 10 * this.tournament.nbRounds);
+      const minP = 1 / (10 * totalPoints);
       // Compute perf:
       let success = {};
       Object.keys(this.players).forEach(uid => {
@@ -1063,9 +1096,10 @@ export default {
             totGames += met[uid][m];
           });
           perf /= totGames;
-          const adjustedScore =
-            this.scores[uid] - this.exempts.filter(e => e == uid).length;
-          success[uid] = adjustedScore / (multFact * totGames);
+          const exPts =
+            this.exempts.map((e,i) => e == uid ? totPoints[i] : 0)
+            .reduce((x1, x2) => x1 + x2)
+          success[uid] = (this.scores[uid] - exPts) / (totalPoints - exPts);
           if (success[uid] == 0) success[uid] = minP;
           else if (success[uid] == 1) success[uid] = 1 - minP;
           const delta = -400 * Math.log10(1 / success[uid] - 1);
@@ -1073,19 +1107,32 @@ export default {
         }
       });
       // Compute tie break:
+      let totGames = {};
       Object.keys(this.players).forEach(uid => {
         const pMet = Object.keys(met[uid]);
+        totGames[uid] = 0;
         if (pMet.length == 0) tieBreak[uid] = 0;
         else {
           let tb = 0;
           let totGames = 0;
           pMet.forEach(m => {
             tb += met[uid][m] * success[m];
-            totGames += met[uid][m];
+            totGames[uid] += met[uid][m];
           });
-          tieBreak[uid] = tb / totGames;
+          tieBreak[uid] = tb / totGames[uid];
         }
       });
+      // Now add winning rate (useful if round-robin)
+      for (let i=0; i<L; i++) {
+        this.rounds[i].forEach(g => {
+          const scVal = this.scoreSymbToValues(g.score);
+          const avgPts = totPoints[i] / 2;
+          if (scVal[0] > avgPts)
+            tieBreak[g.player1] += 1.0 / totGames[g.player1];
+          else if (scVal[1] > avgPts)
+            tieBreak[g.player2] += 1.0 / totGames[g.player2];
+        });
+      }
       // Now rank players and fill variables
       let pids = Object.keys(this.players).sort((p1,p2) => {
         if (
@@ -1114,7 +1161,6 @@ export default {
         rounds[uid] = [...Array(L)];
         for (let i=0; i<L; i++) rounds[uid][i] = { url: "", value: "" };
       });
-      for (let i=0; i<n; i++) rounds
       let rank = {};
       for (let i=0; i<n; i++) rank[pids[i]] = i + 1;
       for (let i=0; i<L; i++) {
@@ -1123,9 +1169,9 @@ export default {
           rounds[p1][i].url = g.glink;
           rounds[p2][i].url = g.glink;
           rounds[p1][i].value = scoreToSymbol(g.score, 'W') + rank[p2];
-          if (!this.tournament.bothcol) rounds[p1][i].value += 'W';
+          if (totPoints[i] == 1) rounds[p1][i].value += 'W';
           rounds[p2][i].value = scoreToSymbol(g.score, 'B') + rank[p1];
-          if (!this.tournament.bothcol) rounds[p2][i].value += 'B';
+          if (totPoints[i] == 1) rounds[p2][i].value += 'B';
         });
         if (!!this.exempts[i]) rounds[this.exempts[i]][i].value = "E";
       }
@@ -1345,6 +1391,7 @@ h4
 
 #endRoundAction
   text-align: center
+  margin-top: 5px
 
 #nextStageBtn
   display: block
@@ -1355,6 +1402,7 @@ h4
   max-height: 100%
 
 table
+  //margin-bottom: 10px
   max-height: 100%
   td
     border-left: 1px solid darkgrey

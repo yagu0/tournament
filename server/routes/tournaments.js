@@ -75,6 +75,18 @@ router.put("/toggle_state", access.logged, access.ajax, (req,res) => {
   }
 });
 
+router.put("/early_end", access.logged, access.ajax, (req,res) => {
+  const tid = req.body.tid;
+  if (
+    !!tid && !!tid.toString().match(/^[0-9]+$/) &&
+    Number.isInteger(req.body.nbRounds) &&
+    params.admin.includes(req.userId)
+  ) {
+    TournamentModel.setNbRounds(tid, req.body.nbRounds);
+    res.json({});
+  }
+});
+
 router.delete("/tournaments", access.logged, access.ajax, (req,res) => {
   const tid = req.query.id;
   if (
