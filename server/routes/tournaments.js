@@ -66,10 +66,11 @@ router.put("/light_tupdate", access.logged, access.ajax, (req,res) => {
   const obj = req.body.tupdate;
   if (
     params.admin.includes(req.userId) &&
+    !!req.body.tid && !!req.body.tid.toString().match(/^[0-9]+$/) &&
     (!obj.variant || !!obj.variant.match(/^[\w]+$/)) &&
     (!obj.cadence || !!obj.cadence.match(/^[\w+ -]+$/))
   ) {
-    TournamentModel.lightModify(obj);
+    TournamentModel.lightModify(req.body.tid, obj);
   }
   res.json({});
 });

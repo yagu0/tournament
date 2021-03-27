@@ -223,7 +223,7 @@ export default {
             data: { id: tid },
             success: (ret) => {
               let tournaments = this[this.display + "Tournaments"];
-              ArrayFun.remove(tournament, t => t.id == tid);
+              ArrayFun.remove(tournaments, t => t.id == tid);
               this.newtour = {};
               document.getElementById("modalNewtour").checked = false;
             }

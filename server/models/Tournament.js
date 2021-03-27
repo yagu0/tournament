@@ -93,14 +93,14 @@ const TournamentModel = {
     });
   },
 
-  lightModify: function(t) {
+  lightModify: function(id, t) {
     db.serialize(function() {
-      const query =
-        "UPDATE Tournaments " +
-        "SET variant = '" + t.variant + "'" +
-        ", bothcol = " + !!t.bothcol +
-        ", cadence = '" + t.cadence + "'" +
-        "WHERE id = " + t.id;
+      let query = "UPDATE Tournaments SET ";
+      if (!!t.variant) query += "variant = '" + t.variant + "',";
+      if (!!t.cadence) query += "cadence = '" + t.cadence + "',";
+      if (t.bothcol !== undefined) query += "bothcol = " + !!t.bothcol + ",";
+      query = query.slice(0, -1);
+      query += " WHERE id = " + id;
       db.run(query);
     });
   },

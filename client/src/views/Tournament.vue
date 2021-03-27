@@ -213,7 +213,7 @@ main
                   type="checkbox"
                   v-model="nextValues.bothcol")
             button(
-              v-if="rounds.length > 0"
+              v-if="rounds.length > 0 && tournament.frozen"
               @click="finishTournament()"
             )
               | {{ st.tr["Finish tournament"] }}
@@ -457,9 +457,9 @@ export default {
           success: (res) => {
             this.tournament = res.tournament;
             this.nextValues = {
-              variant: tournament.variant,
-              cadence: tournament.cadence,
-              bothcol: tournament.bothcol
+              variant: res.tournament.variant,
+              cadence: res.tournament.cadence,
+              bothcol: res.tournament.bothcol
             };
             if (res.tournament.stage == 4) this.chatVisible = false;
             setSocketVars();
@@ -1138,7 +1138,6 @@ export default {
         if (pMet.length == 0) tieBreak[uid] = 0;
         else {
           let tb = 0;
-          let totGames = 0;
           pMet.forEach(m => {
             tb += met[uid][m] * success[m];
             totGames[uid] += met[uid][m];
