@@ -868,11 +868,13 @@ export default {
       ) {
         L--;
       }
-      // Preliminary computation: how many points maximum?
       let maxPoints = 0;
-      for (const g of this.rounds[L-1]) {
-        maxPoints = this.score2TotalPoints(g.score);
-        if (maxPoints >= 1) break;
+      if (L > 0) {
+        // Preliminary computation: how many points maximum?
+        for (const g of this.rounds[L-1]) {
+          maxPoints = this.score2TotalPoints(g.score);
+          if (maxPoints >= 1) break;
+        }
       }
       let scores = {};
       for (let i=0; i<L; i++) {
