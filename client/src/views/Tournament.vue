@@ -868,9 +868,16 @@ export default {
       ) {
         L--;
       }
+      // Preliminary computation: how many points maximum?
+      let maxPoints = 0;
+      for (const g of this.rounds[L-1]) {
+        maxPoints = this.score2TotalPoints(g.score);
+        if (maxPoints >= 1) break;
+      }
       let scores = {};
       for (let i=0; i<L; i++) {
-        if (!!this.exempts[i]) this.increment(scores, this.exempts[i]);
+        if (!!this.exempts[i])
+          this.increment(scores, this.exempts[i], maxPoints);
         this.rounds[i].forEach(g => {
           const sc = this.scoreSymbToValues(g.score);
           this.increment(scores, g.player1, sc[0]);
