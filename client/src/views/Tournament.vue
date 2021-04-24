@@ -21,6 +21,7 @@ main
     .card
       label.modal-close(for="modalNotfound")
       p {{ st.tr["Tournament not found"] }}
+      p.text-center &#128542;
   input#modalJoin.modal(type="checkbox")
   div#joinWrap(
     role="dialog"
@@ -289,7 +290,7 @@ export default {
     this.atCreation();
   },
   mounted: function() {
-    ["gamelink","score","join","tinfos"].forEach(elt => {
+    ["gamelink","score","join","notfound","tinfos"].forEach(elt => {
       document.getElementById(elt + "Wrap")
         .addEventListener("click", processModalClick);
     });
@@ -313,6 +314,7 @@ export default {
     },
     showJoinButton: function() {
       return (
+        this.tournament.id >= 1 &&
         this.st.user.id > 0 &&
         !Object.keys(this.players).includes(this.st.user.id.toString()) &&
         (
