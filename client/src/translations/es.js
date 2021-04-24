@@ -76,6 +76,7 @@ export const translations = {
   Time: "Tiempo",
   Title: "Titulo",
   Tournament: "Torneo",
+  "Tournament not found": "Torneo no encontrado",
   Tournaments: "Torneos",
   "Two games": "Dos partidas",
   "Unknown rating:": "Clasificación desconocida:",

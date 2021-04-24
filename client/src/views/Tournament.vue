@@ -13,6 +13,14 @@ main
         p {{ tournament.nbRounds }} {{ st.tr["rounds"] }}
         p(v-if="tournament.allRounds") {{ st.tr["All rounds"] }}
         p(v-if="tournament.bothcol") {{ st.tr["Round trip"] }}
+  input#modalNotfound.modal(type="checkbox")
+  div#notfoundWrap(
+    role="dialog"
+    data-checkbox="modalNotfound"
+  )
+    .card
+      label.modal-close(for="modalNotfound")
+      p {{ st.tr["Tournament not found"] }}
   input#modalJoin.modal(type="checkbox")
   div#joinWrap(
     role="dialog"
@@ -455,6 +463,25 @@ export default {
         {
           data: { id: this.$route.params["id"] },
           success: (res) => {
+            if (!res.tournament) {
+              doClick("modalNotfound");
+              this.tournament = {
+                id: 0,
+                title: "",
+                variant: "",
+                cadence: "",
+                bothcol: false,
+                stage: 0,
+                allRounds: false,
+                nbRounds: 0,
+                frozen: false
+              };
+              this.players = {};
+              this.rounds = [];
+              this.exempts = [];
+              this.chats = [];
+              return;
+            }
             this.tournament = res.tournament;
             this.nextValues = {
               variant: res.tournament.variant,
