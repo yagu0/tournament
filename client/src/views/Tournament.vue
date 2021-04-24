@@ -13,15 +13,6 @@ main
         p {{ tournament.nbRounds }} {{ st.tr["rounds"] }}
         p(v-if="tournament.allRounds") {{ st.tr["All rounds"] }}
         p(v-if="tournament.bothcol") {{ st.tr["Round trip"] }}
-  input#modalNotfound.modal(type="checkbox")
-  div#notfoundWrap(
-    role="dialog"
-    data-checkbox="modalNotfound"
-  )
-    .card
-      label.modal-close(for="modalNotfound")
-      p {{ st.tr["Tournament not found"] }}
-      p.text-center &#128542;
   input#modalJoin.modal(type="checkbox")
   div#joinWrap(
     role="dialog"
@@ -290,7 +281,7 @@ export default {
     this.atCreation();
   },
   mounted: function() {
-    ["gamelink","score","join","notfound","tinfos"].forEach(elt => {
+    ["gamelink","score","join","tinfos"].forEach(elt => {
       document.getElementById(elt + "Wrap")
         .addEventListener("click", processModalClick);
     });
@@ -314,7 +305,6 @@ export default {
     },
     showJoinButton: function() {
       return (
-        this.tournament.id >= 1 &&
         this.st.user.id > 0 &&
         !Object.keys(this.players).includes(this.st.user.id.toString()) &&
         (
@@ -466,22 +456,13 @@ export default {
           data: { id: this.$route.params["id"] },
           success: (res) => {
             if (!res.tournament) {
-              doClick("modalNotfound");
-              this.tournament = {
-                id: 0,
-                title: "",
-                variant: "",
-                cadence: "",
-                bothcol: false,
-                stage: 0,
-                allRounds: false,
-                nbRounds: 0,
-                frozen: false
-              };
-              this.players = {};
-              this.rounds = [];
-              this.exempts = [];
-              this.chats = [];
+              // Soon after component creation, st.tr might be uninitialized.
+              // => Timeout to let a chance for the message to show translated.
+              const text = "Tournament not found";
+              setTimeout(() => {
+                alert(this.st.tr[text] || text);
+                this.$router.replace("/");
+              }, 500);
               return;
             }
             this.tournament = res.tournament;
