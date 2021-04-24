@@ -869,6 +869,11 @@ export default {
       }
       return []; //never reached
     },
+    score2TotalPoints: function(score) {
+      if (score == "F-F") return 0;
+      if (["1-0", "0-1", "1/2", "1-F", "F-1"].includes(score)) return 1;
+      return 2;
+    },
     computeScores: function() {
       // Use current rounds state to get cumulated scores:
       let L = this.rounds.length;
@@ -878,16 +883,14 @@ export default {
       ) {
         L--;
       }
-      let maxPoints = 0;
-      if (L > 0) {
+      let scores = {};
+      for (let i=0; i<L; i++) {
         // Preliminary computation: how many points maximum?
-        for (const g of this.rounds[L-1]) {
+        let maxPoints = 0;
+        for (const g of this.rounds[i]) {
           maxPoints = this.score2TotalPoints(g.score);
           if (maxPoints >= 1) break;
         }
-      }
-      let scores = {};
-      for (let i=0; i<L; i++) {
         if (!!this.exempts[i])
           this.increment(scores, this.exempts[i], maxPoints);
         this.rounds[i].forEach(g => {
@@ -1076,11 +1079,6 @@ export default {
       }
       //const assignment = maxWeightMatching(edges, true);
       maxWeightMatching(edges, finishPairings);
-    },
-    score2TotalPoints: function(score) {
-      if (score == "F-F") return 0;
-      if (["1-0", "0-1", "1/2", "1-F", "F-1"].includes(score)) return 1;
-      return 2;
     },
     computeFinalGrid: function() {
       const scoreToSymbol = (score, c) => {
