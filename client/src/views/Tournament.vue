@@ -982,7 +982,7 @@ export default {
           let minScore = Infinity;
           activePlayers.forEach(k => {
             const scoreE =
-              state[k].exempt +
+              500 * state[k].exempt + //500 = arbitrary large value
               (this.scores[k] + 1 - 1 / this.players[k].elo) / (2 * L + 1);
             if (scoreE < minScore) {
               minScore = scoreE;
