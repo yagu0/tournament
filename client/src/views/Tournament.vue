@@ -319,7 +319,7 @@ export default {
       );
     },
     clickJoinButton: function() {
-      if (this.st.user.id == 0) alert(this.st.tr["You must login first!"]);
+      if (!this.st.user.id) alert(this.st.tr["You must login first!"]);
       else window.doClick('modalJoin');
     },
     chatBtnClick: function() {
