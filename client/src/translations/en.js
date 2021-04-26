@@ -92,6 +92,7 @@ export const translations = {
   View: "View",
   "Withdraw from tournament?": "Withdraw from tournament?",
   "Wrong time control": "Wrong time control",
+  "You must login first!": "You must login first!",
   "Your account isn't activated yet. Please reload this page later": "Your account isn't activated yet. Please reload this page later",
 
   // Form error messages:

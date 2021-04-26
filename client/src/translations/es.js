@@ -1,10 +1,10 @@
 export const translations = {
   "Advanced": "Avanzado",
   "All rounds": "Todas rondas",
-  "An error occurred. Try again!": "Une erreur est survenue. Réessayez !",
+  "An error occurred. Try again!": "Se ha producido un error. ¡Intentar otra vez!",
   Apply: "Appliquer",
   "Are you sure?": "Êtes-vous sûr ?",
-  "Authentication successful!": "Authentification réussie !",
+  "Authentication successful!": "¡Autenticación exitosa!",
   "Ban player?": "Prohibir jugador",
   "Beginner": "Principiante",
   Cadence: "Cadencia",
@@ -91,6 +91,7 @@ export const translations = {
   View: "Mirar",
   "Withdraw from tournament?": "¿Retirarse del torneo?",
   "Wrong time control": "Cadencia incorrecta",
+  "You must login first!": "¡Debe iniciar sesión primero!",
   "Your account isn't activated yet. Please reload this page later": "Tu cuenta aún no está activada. Vuelva a cargar esta página más tarde",
 
   // Form error messages:

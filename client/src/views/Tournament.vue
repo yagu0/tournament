@@ -113,7 +113,7 @@ main
           | {{ st.tr["Confirm"] }}
         button#joinBtn(
           v-if="showJoinButton()"
-          onClick="window.doClick('modalJoin')"
+          @click="clickJoinButton()"
         )
           | {{ st.tr["Join"] }}
         table
@@ -305,15 +305,22 @@ export default {
     },
     showJoinButton: function() {
       return (
-        this.st.user.id > 0 &&
-        !Object.keys(this.players).includes(this.st.user.id.toString()) &&
+        this.tournament.stage <= 3 &&
         (
           !this.tournament.allRounds ||
           Object.values(this.players).filter(v => !v.ban).length
             <= this.tournament.nbRounds
         )
-        && this.tournament.stage <= 3
+        &&
+        (
+          this.st.user.id == 0 ||
+          !Object.keys(this.players).includes(this.st.user.id.toString())
+        )
       );
+    },
+    clickJoinButton: function() {
+      if (this.st.user.id == 0) alert(this.st.tr["You must login first!"]);
+      else window.doClick('modalJoin');
     },
     chatBtnClick: function() {
       this.chatVisible = !this.chatVisible;

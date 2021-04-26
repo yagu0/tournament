@@ -96,6 +96,7 @@ export const translations = {
   View: "Voir",
   "Withdraw from tournament?": "Sortir du tournoi ?",
   "Wrong time control": "Cadence erronée",
+  "You must login first!": "Il faut d'abord vous loguer !",
   "Your account isn't activated yet. Please reload this page later": "Votre compte n'est pas encore activé. Veuillez recharger cette page plus tard",
 
   // Form error messages:
