@@ -313,7 +313,7 @@ export default {
         )
         &&
         (
-          this.st.user.id == 0 ||
+          !this.st.user.id ||
           !Object.keys(this.players).includes(this.st.user.id.toString())
         )
       );
