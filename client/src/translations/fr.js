@@ -100,13 +100,14 @@ export const translations = {
 
   // Form error messages:
   "Elo: positive integer": "Elo : entier positif",
-  "User name: alphanumerics, underscore and hyphen": "Nom d'utilisateur : caractères alphanumériques, soulignement et tiret",
-  "Start time is missing or too soon": "Heure de début manquante ou trop tôt",
-  "Rounds count: positive integer": "Nombre de rondes : entier positif",
-  "Rounds count must be odd if all rounds": "Le nombre de ronde doit être impair si toutes rondes",
-  "Wrong cadence (alphanumerics, space, '+' and '_')": "Mauvaise cadence (alphanumériques, espace, '+' et '_')",
-  "Missing title": "Titre manquant",
+  "Invalid email": "Email invalide",
   "Missing email": "Email manquant",
   "Missing name": "Nom manquant",
-  "Invalid email": "Email invalide"
+  "Missing or wrong variant name (alphanumerics)": "Nom de variante manquant ou erroné (alphanumérique)",
+  "Missing title": "Titre manquant",
+  "Rounds count: positive integer": "Nombre de rondes : entier positif",
+  "Rounds count must be odd if all rounds": "Le nombre de ronde doit être impair si toutes rondes",
+  "Start time is missing or too soon": "Heure de début manquante ou trop tôt",
+  "User name: alphanumerics, underscore and hyphen": "Nom d'utilisateur : caractères alphanumériques, soulignement et tiret",
+  "Wrong cadence (alphanumerics, space, '+' and '_')": "Mauvaise cadence (alphanumériques, espace, '+' et '_')",
 };

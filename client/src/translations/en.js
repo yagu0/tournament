@@ -96,13 +96,14 @@ export const translations = {
 
   // Form error messages:
   "Elo: positive integer": "Elo: positive integer",
-  "User name: alphanumerics, underscore and hyphen": "User name: alphanumerics, underscore and hyphen",
-  "Start time is missing or too soon": "Start time is missing or too soon",
-  "Rounds count: positive integer": "Rounds count: positive integer",
-  "Rounds count must be odd if all rounds": "Rounds count must be odd if all rounds",
-  "Wrong cadence (alphanumerics, space, '+' and '_')": "Wrong cadence (alphanumerics, space, '+' and '_')",
-  "Missing title": "Missing title",
+  "Invalid email": "Invalid email",
   "Missing email": "Missing email",
   "Missing name": "Missing name",
-  "Invalid email": "Invalid email"
+  "Missing or wrong variant name (alphanumerics)": "Missing or wrong variant name (alphanumerics)",
+  "Missing title": "Missing title",
+  "Rounds count: positive integer": "Rounds count: positive integer",
+  "Rounds count must be odd if all rounds": "Rounds count must be odd if all rounds",
+  "Start time is missing or too soon": "Start time is missing or too soon",
+  "User name: alphanumerics, underscore and hyphen": "User name: alphanumerics, underscore and hyphen",
+  "Wrong cadence (alphanumerics, space, '+' and '_')": "Wrong cadence (alphanumerics, space, '+' and '_')",
 };

@@ -31,9 +31,9 @@ const TournamentModel = {
         "INSERT INTO Tournaments " +
         "(dtstart, title, variant, allRounds, bothcol, cadence, nbRounds) " +
           "VALUES " +
-        "(" + t.dtstart + ",?,?," + !!t.allRounds + "," +
+        "(" + t.dtstart + ",?,'" + variant + "'," + !!t.allRounds + "," +
             !!t.bothcol + ",'" + t.cadence  + "'," + t.nbRounds + ")";
-      db.run(query, t.title, t.variant, function(err) {
+      db.run(query, t.title, function(err) {
         cb(err, { id: this.lastID });
       });
     });
