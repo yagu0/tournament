@@ -21,9 +21,9 @@ def sync_tournament():
     tcur.execute("SELECT name,email FROM Users WHERE id = ?", (sys.argv[1],))
     trow = tcur.fetchone()
     if trow[0] != vrow[0]:
-        tconn.cursor().execute("UPDATE Users SET name = ? WHERE id = ?", (vuser[1],vuser[0]))
+        tconn.cursor().execute("UPDATE Users SET name = ? WHERE id = ?", (vrow[1],vrow[0]))
     if trow[1] != vrow[1]:
-        tconn.cursor().execute("UPDATE Users SET email = ? WHERE id = ?", (vuser[2],vuser[0]))
+        tconn.cursor().execute("UPDATE Users SET email = ? WHERE id = ?", (vrow[2],vrow[0]))
     tcur.close()
     tconn.commit()
 
