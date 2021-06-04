@@ -1,3 +1,9 @@
+<!--
+  TODO: simplify this Vue file, split it.
+  Ajouter infos sur rondes précédentes, sur le déroulement du tournoi.
+  Show a nice final grid.
+-->
+
 <template lang="pug">
 main
   input#modalTinfos.modal(type="checkbox")

@@ -15,13 +15,20 @@ create table Tournaments (
   id integer primary key,
   dtstart datetime,
   title varchar,
-  variant varchar,
-  bothcol boolean,
   allRounds boolean,
-  cadence varchar,
   nbRounds integer,
   frozen boolean,
   stage integer default 0
+);
+
+-- TODO: at tournament creation, give a series of variant[cadence]2 <-- '2' if bothcol/twogames.
+-- or, juste series of variants + global bothcol / cadence. Or just one variant + cadence + bothcol
+-- --> and use this table below !
+create table Rounds (
+  tid integer,
+  variant varchar,
+  cadence varchar,
+  bothcol boolean
 );
 
 create table Chats (

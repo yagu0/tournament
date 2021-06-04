@@ -7,3 +7,12 @@ In Tournament.vue:
  - allow to go back and relaunch round if mistakes
  - Audio file isn't played at new round
  - select box to look back at previous rounds?
+
+translate pairing to javascript
+provide comma-separated list of variants for tournament => no more box below to edit between rounds (or maybe still... but pre-filled)
+   (also provide bothcol, cadence, etc)
+=> new table "Rounds" maybe, pre-filled with rounds infos. Warning: deletion of end earlier.
+Ne pas fixer à l'avance le nombre de rondes ?
+=====
+améliorer visualisation : afficher résultats et infos des rondes passées
+   + afficher grille finale dans format lisible sur tel aussi !
